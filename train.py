@@ -6,7 +6,6 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # Define paths
 labeled_image_dir = 'labeled/'
