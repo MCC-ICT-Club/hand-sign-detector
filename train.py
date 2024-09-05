@@ -3,9 +3,9 @@ import os
 import cv2
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras import Sequential
+from keras.src.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.models import Sequential
 
 # Define paths
 labeled_image_dir = 'labeled/'
@@ -104,7 +104,7 @@ def main():
     model_checkpoint = ModelCheckpoint('hand_sign_model.h5', save_best_only=True)
 
     # Train the model
-    history = model.fit(
+    model.fit(
         train_dataset,
         epochs=epochs,
         validation_data=val_dataset,
