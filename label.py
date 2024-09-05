@@ -92,3 +92,4 @@ if __name__ == "__main__":
     drawing = False
     ix, iy = -1, -1
     main()
+    shutil.rmtree("tmp")
