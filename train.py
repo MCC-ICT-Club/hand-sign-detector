@@ -1,11 +1,12 @@
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import os
+
 import cv2
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # Define paths
 labeled_image_dir = 'labeled/'
@@ -15,6 +16,7 @@ epochs = 20
 num_classes = 50
 
 tf.config.run_functions_eagerly(True)
+
 
 # Helper function to load images and labels
 def load_data_from_directory(directory):
@@ -51,65 +53,70 @@ def load_data_from_directory(directory):
     return images, labels
 
 
-# Load the data
-images, labels = load_data_from_directory(labeled_image_dir)
+def main():
+    # Load the data
+    images, labels = load_data_from_directory(labeled_image_dir)
 
-# Convert labels to one-hot encoding
-label_dict = {name: idx for idx, name in enumerate(sorted(set(labels)))}
-labels = np.array([label_dict[label] for label in labels])
-labels = tf.keras.utils.to_categorical(labels, num_classes=num_classes)
+    # Convert labels to one-hot encoding
+    label_dict = {name: idx for idx, name in enumerate(sorted(set(labels)))}
+    labels = np.array([label_dict[label] for label in labels])
+    labels = tf.keras.utils.to_categorical(labels, num_classes=num_classes)
 
-# Split data into training and validation sets
-split = int(len(images) * 0.8)
-train_images, val_images = images[:split], images[split:]
-train_labels, val_labels = labels[:split], labels[split:]
+    # Split data into training and validation sets
+    split = int(len(images) * 0.8)
+    train_images, val_images = images[:split], images[split:]
+    train_labels, val_labels = labels[:split], labels[split:]
 
-# Create TensorFlow datasets
-train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels))
-train_dataset = train_dataset.shuffle(buffer_size=1000).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    # Create TensorFlow datasets
+    train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels))
+    train_dataset = train_dataset.shuffle(buffer_size=1000).batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
-val_dataset = val_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
+    val_dataset = val_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-for images, labels in train_dataset.take(1):
-    print('Train images shape:', images.shape)
-    print('Train labels shape:', labels.shape)
+    for images, labels in train_dataset.take(1):
+        print('Train images shape:', images.shape)
+        print('Train labels shape:', labels.shape)
 
-for images, labels in val_dataset.take(1):
-    print('Validation images shape:', images.shape)
-    print('Validation labels shape:', labels.shape)
+    for images, labels in val_dataset.take(1):
+        print('Validation images shape:', images.shape)
+        print('Validation labels shape:', labels.shape)
 
-# Define the CNN model
-model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(image_size[0], image_size[1], 3)),
-    MaxPooling2D((2, 2)),
-    Conv2D(64, (3, 3), activation='relu'),
-    MaxPooling2D((2, 2)),
-    Conv2D(128, (3, 3), activation='relu'),
-    MaxPooling2D((2, 2)),
-    Flatten(),
-    Dense(128, activation='relu'),
-    Dense(num_classes, activation='softmax')  # num_classes for the output layer
-])
+    # Define the CNN model
+    model = Sequential([
+        Conv2D(32, (3, 3), activation='relu', input_shape=(image_size[0], image_size[1], 3)),
+        MaxPooling2D((2, 2)),
+        Conv2D(64, (3, 3), activation='relu'),
+        MaxPooling2D((2, 2)),
+        Conv2D(128, (3, 3), activation='relu'),
+        MaxPooling2D((2, 2)),
+        Flatten(),
+        Dense(128, activation='relu'),
+        Dense(num_classes, activation='softmax')  # num_classes for the output layer
+    ])
 
-# Compile the model
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+    # Compile the model
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
-# Callbacks
-early_stopping = EarlyStopping(monitor='val_loss', patience=3)
-model_checkpoint = ModelCheckpoint('hand_sign_model.h5', save_best_only=True)
+    # Callbacks
+    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
+    model_checkpoint = ModelCheckpoint('hand_sign_model.h5', save_best_only=True)
 
-# Train the model
-history = model.fit(
-    train_dataset,
-    epochs=epochs,
-    validation_data=val_dataset,
-    callbacks=[early_stopping, model_checkpoint]
-)
+    # Train the model
+    history = model.fit(
+        train_dataset,
+        epochs=epochs,
+        validation_data=val_dataset,
+        callbacks=[early_stopping, model_checkpoint]
+    )
 
-# Evaluate the model
-loss, accuracy = model.evaluate(val_dataset)
-print(f'Validation Loss: {loss}')
-print(f'Validation Accuracy: {accuracy}')
+    # Evaluate the model
+    loss, accuracy = model.evaluate(val_dataset)
+    print(f'Validation Loss: {loss}')
+    print(f'Validation Accuracy: {accuracy}')
+
+
+if __name__ == "__main__":
+    main()

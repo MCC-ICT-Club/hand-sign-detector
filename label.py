@@ -1,6 +1,7 @@
-import cv2
 import os
 import shutil
+
+import cv2
 
 # Define paths
 raw_image_dir = 'raw/'
@@ -12,6 +13,7 @@ label_names = ['thumbs_up', 'pinkie_out', 'index_up']  # Update with your labels
 for label in label_names:
     os.makedirs(os.path.join(labeled_image_dir, label), exist_ok=True)
     os.makedirs(os.path.join(tmp_dir), exist_ok=True)
+
 
 def draw_rectangle(event, x, y, flags, param):
     global ix, iy, drawing, label, img_name
@@ -33,6 +35,7 @@ def draw_rectangle(event, x, y, flags, param):
         with open(os.path.join(label_dir, img_name + '.txt'), 'a') as f:
             f.write(f"{box[0]} {box[1]} {box[2]} {box[3]}\n")
         print(f"Bounding box saved: {box}")
+
 
 def label_image(image_path):
     global img, drawing, ix, iy, label, img_name
@@ -82,11 +85,13 @@ def label_image(image_path):
 
     cv2.destroyAllWindows()
 
+
 def main():
     images = [f for f in os.listdir(raw_image_dir) if os.path.isfile(os.path.join(raw_image_dir, f))]
     for img_name in images:
         image_path = os.path.join(raw_image_dir, img_name)
         label_image(image_path)
+
 
 if __name__ == "__main__":
     drawing = False
