@@ -3,6 +3,7 @@ import os
 import cv2
 import numpy as np
 import tensorflow as tf
+from keras.src.legacy.preprocessing.image import ImageDataGenerator
 
 tf.get_logger().setLevel('ERROR')
 from keras import Sequential
@@ -129,14 +130,29 @@ def main():
     # Callbacks
     early_stopping = EarlyStopping(monitor='val_loss', patience=3)
     model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
-
+    datagen = ImageDataGenerator(
+        rotation_range=20,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest'
+    )
     # Train the model
     model.fit(
-        train_dataset,
+        datagen.flow(train_images, train_labels, batch_size=batch_size),
         epochs=epochs,
         validation_data=val_dataset,
         callbacks=[model_checkpoint, early_stopping]
     )
+    # # Train the model
+    # model.fit(
+    #     train_dataset,
+    #     epochs=epochs,
+    #     validation_data=val_dataset,
+    #     callbacks=[model_checkpoint, early_stopping]
+    # )
 
     # Evaluate the model
     loss, accuracy = model.evaluate(val_dataset)
