@@ -100,7 +100,10 @@ def main():
     val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
     val_dataset = val_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-    y_train = np.array([label_dict[label] for label in labels])
+    labels_list = labels.tolist()
+
+    # Convert labels to numerical format (before one-hot encoding)
+    y_train = np.array([label_dict[label] for label in labels_list])
 
 
     for images, labels in train_dataset.take(1):
