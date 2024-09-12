@@ -66,6 +66,10 @@ def label_image(image_path):
 
         if 0 < int(key_str) < len(label_names) + 1:
             label = label_names[int(key_str) - 1]
+        elif int(key_str) == 0:
+            label = label_names[9]
+        elif key_str == "p":
+            label = label_names[10]
         elif key == ord('q'):
             break
         else:
@@ -92,7 +96,8 @@ def label_image(image_path):
 
 
 def main():
-    images = [f for f in os.listdir(raw_image_dir) if os.path.isfile(os.path.join(raw_image_dir, f))]
+    images = [f for f in os.listdir(raw_image_dir) if os.path.isfile(os.path.join(raw_image_dir, f)) and f.endswith(
+        '.jpg') or f.endswith('.png')]
     for img_name in images:
         image_path = os.path.join(raw_image_dir, img_name)
         label_image(image_path)

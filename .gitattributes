@@ -1319,3 +1319,4 @@ raw/19-color_26.png filter=lfs diff=lfs merge=lfs -text
 raw/22-color_18.png filter=lfs diff=lfs merge=lfs -text
 raw/22-color_25.png filter=lfs diff=lfs merge=lfs -text
 labled filter=lfs diff=lfs merge=lfs -text
+raw/*.png filter=lfs diff=lfs merge=lfs -text

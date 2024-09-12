@@ -13,6 +13,7 @@ image_size = (640, 480)  # Resize images to this size
 batch_size = 32
 epochs = 20
 num_classes = 50
+use_bounding_boxes = False
 
 tf.config.run_functions_eagerly(True)
 
@@ -25,25 +26,31 @@ def load_data_from_directory(directory):
         label_path = os.path.join(directory, label_name)
         if os.path.isdir(label_path):
             for img_file in os.listdir(label_path):
-                if img_file.endswith('.jpg'):
+                if img_file.endswith('.jpg') or img_file.endswith('.png'):
                     img_path = os.path.join(label_path, img_file)
                     label = label_name
-                    bounding_boxes = []
+                    if use_bounding_boxes:
+                        bounding_boxes = []
 
-                    # Load bounding box file
-                    bbox_file = os.path.splitext(img_path)[0] + '.txt'
-                    if os.path.exists(bbox_file):
-                        with open(bbox_file, 'r') as f:
-                            for line in f:
-                                bbox = list(map(int, line.strip().split()))
-                                bounding_boxes.append(bbox)
+                        # Load bounding box file
+                        bbox_file = os.path.splitext(img_path)[0] + '.txt'
+                        if os.path.exists(bbox_file):
+                            with open(bbox_file, 'r') as f:
+                                for line in f:
+                                    bbox = list(map(int, line.strip().split()))
+                                    bounding_boxes.append(bbox)
 
                     # Read image
                     img = cv2.imread(img_path)
-                    for bbox in bounding_boxes:
-                        x1, y1, x2, y2 = bbox
-                        cropped_img = img[y1:y2, x1:x2]
-                        resized_img = cv2.resize(cropped_img, (image_size[1], image_size[0]))
+                    if use_bounding_boxes:
+                        for bbox in bounding_boxes:
+                            x1, y1, x2, y2 = bbox
+                            cropped_img = img[y1:y2, x1:x2]
+                            resized_img = cv2.resize(cropped_img, (image_size[1], image_size[0]))
+                            images.append(resized_img)
+                            labels.append(label)
+                    else:
+                        resized_img = cv2.resize(img, (image_size[1], image_size[0]))
                         images.append(resized_img)
                         labels.append(label)
 
@@ -83,7 +90,8 @@ def main():
 
     # Define the CNN model
     model = Sequential([
-        Conv2D(32, (3, 3), activation='relu', input_shape=(image_size[0], image_size[1], 3)),
+        Input(shape=(image_size[0], image_size[1], 3)),  # Specify input shape here
+        Conv2D(32, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
         Conv2D(64, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
@@ -101,7 +109,7 @@ def main():
 
     # Callbacks
     early_stopping = EarlyStopping(monitor='val_loss', patience=3)
-    model_checkpoint = ModelCheckpoint('hand_sign_model.h5', save_best_only=True)
+    model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
 
     # Train the model
     model.fit(
