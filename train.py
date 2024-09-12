@@ -4,17 +4,18 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from keras.src.legacy.preprocessing.image import ImageDataGenerator
-
-tf.get_logger().setLevel('ERROR')
 from keras import Sequential
 from keras.src.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input, Dropout
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
-policy = mixed_precision.Policy('mixed_float16')
-mixed_precision.set_policy(policy)
+from tensorflow.keras import mixed_precision
+
+tf.get_logger().setLevel('ERROR')
+
+mixed_precision.set_global_policy('mixed_float16')
+
 
 # Define paths
 labeled_image_dir = 'labeled/'
