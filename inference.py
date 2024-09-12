@@ -1,15 +1,19 @@
 import cv2
 import numpy as np
 import tensorflow as tf
+import json
 
 # Load the trained model
-model = tf.keras.models.load_model('hand_sign_model.h5')
+model = tf.keras.models.load_model('hand_sign_model.keras')
 
 # Define image size (should match the size used during training)
-image_size = (150, 150)
-
+image_size = (640, 480)
+def get_classes_from_json(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+        return data['classes']
 # Load label names (adjust according to your model's labels)
-label_names = ['label1', 'label2', 'label3']  # Update with your actual labels
+label_names = get_classes_from_json("classes.json")  # Update with your actual labels
 
 
 def preprocess_image(image):
@@ -24,7 +28,7 @@ def preprocess_image(image):
 
 def main():
     # Open the webcam
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         return
