@@ -87,8 +87,8 @@ def main():
     label_dict = {name: idx for idx, name in enumerate(sorted(set(labels)))}
     label_list = sorted(set(labels), key=lambda x: (x[0], int(x[1:])))
     labels_raw = np.array([label_list.index(label) for label in labels])
-    labels = np.array([label_dict[label] for label in labels])
-    labels = tf.keras.utils.to_categorical(labels, num_classes=num_classes)
+#    labels = np.array([label_dict[label] for label in labels])
+    labels = tf.keras.utils.to_categorical(labels_raw, num_classes=num_classes)
 
     # # Split data into training and validation sets
     split = int(len(images) * 0.8)
