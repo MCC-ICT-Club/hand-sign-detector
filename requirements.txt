@@ -3,3 +3,6 @@ numpy
 tensorflow[and-cuda]
 keras
 tensorrt
+scikit-learn
+seaborn
+matplotlib
