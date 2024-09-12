@@ -2,5 +2,4 @@ opencv-python
 numpy
 tensorflow[and-cuda]
 keras
-nvidia-pyindex
-nvidia-tensorrt
+tensorrt
