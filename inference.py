@@ -8,10 +8,14 @@ model = tf.keras.models.load_model('hand_sign_model.keras')
 
 # Define image size (should match the size used during training)
 image_size = (640, 480)
+
+
 def get_classes_from_json(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
         return data['classes']
+
+
 # Load label names (adjust according to your model's labels)
 label_names = get_classes_from_json("classes.json")  # Update with your actual labels
 

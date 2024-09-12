@@ -12,8 +12,8 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input
 labeled_image_dir = 'labeled/'
 image_size = (640, 480)  # Resize images to this size
 batch_size = 32
-epochs = 20
-num_classes = 50
+epochs = 80
+num_classes = 11
 use_bounding_boxes = False
 
 
