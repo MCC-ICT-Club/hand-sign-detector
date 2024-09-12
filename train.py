@@ -20,7 +20,7 @@ mixed_precision.set_global_policy('mixed_float16')
 # Define paths
 labeled_image_dir = 'labeled/'
 image_size = (640, 480)  # Resize images to this size
-batch_size = 4
+batch_size = 16
 epochs = 80
 num_classes = 11
 use_bounding_boxes = False
@@ -123,7 +123,7 @@ def main():
         Dropout(0.5),
         Dense(num_classes, activation='softmax')
     ])
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Compile the model
     model.compile(optimizer=optimizer,
                   loss='categorical_crossentropy',
