@@ -19,6 +19,7 @@ batch_size = 16
 epochs = 80
 num_classes = 11
 use_bounding_boxes = False
+output_confusion_matrix_path = 'confusion_matrix.png'  # Path to save confusion matrix
 
 tf.config.run_functions_eagerly(True)
 
