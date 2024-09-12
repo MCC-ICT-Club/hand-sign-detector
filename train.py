@@ -3,6 +3,7 @@ import os
 import cv2
 import numpy as np
 import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
 from keras import Sequential
 from keras.src.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input
@@ -15,7 +16,10 @@ epochs = 20
 num_classes = 50
 use_bounding_boxes = False
 
-tf.get_logger().setLevel('ERROR')
+
+physical_devices = tf.config.list_physical_devices('GPU')
+for device in physical_devices:
+    tf.config.experimental.set_memory_growth(device, True)
 
 tf.config.run_functions_eagerly(True)
 
@@ -103,10 +107,6 @@ def main():
         Dense(128, activation='relu'),
         Dense(num_classes, activation='softmax')  # num_classes for the output layer
     ])
-
-    physical_devices = tf.config.list_physical_devices('GPU')
-    for device in physical_devices:
-        tf.config.experimental.set_memory_growth(device, True)
 
 
     # Compile the model
