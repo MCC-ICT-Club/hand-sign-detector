@@ -7,8 +7,8 @@ from keras.src.legacy.preprocessing.image import ImageDataGenerator
 
 tf.get_logger().setLevel('ERROR')
 from keras import Sequential
-from keras.src.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input
+from keras.src.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input, Dropout
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -99,6 +99,9 @@ def main():
 
     val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
     val_dataset = val_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+
+    y_train = np.array([label_dict[label] for label in labels])
+
 
     for images, labels in train_dataset.take(1):
         print('Train images shape:', images.shape)
