@@ -3,10 +3,15 @@ import os
 import cv2
 import numpy as np
 import tensorflow as tf
+
 tf.get_logger().setLevel('ERROR')
 from keras import Sequential
 from keras.src.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 # Define paths
 labeled_image_dir = 'labeled/'
 image_size = (640, 480)  # Resize images to this size
@@ -15,8 +20,20 @@ epochs = 80
 num_classes = 11
 use_bounding_boxes = False
 
-
 tf.config.run_functions_eagerly(True)
+
+
+def plot_confusion_matrix(y_true, y_pred, label_dict, output_path):
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=label_dict.keys(),
+                yticklabels=label_dict.keys())
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title('Confusion Matrix')
+    plt.savefig(output_path)
+    plt.close()
 
 
 # Helper function to load images and labels
@@ -103,7 +120,6 @@ def main():
         Dense(num_classes, activation='softmax')  # num_classes for the output layer
     ])
 
-
     # Compile the model
     model.compile(optimizer='adam',
                   loss='categorical_crossentropy',
@@ -118,13 +134,21 @@ def main():
         train_dataset,
         epochs=epochs,
         validation_data=val_dataset,
-        callbacks=[model_checkpoint,] #early_stopping]
+        callbacks=[model_checkpoint, early_stopping]
     )
 
     # Evaluate the model
     loss, accuracy = model.evaluate(val_dataset)
     print(f'Validation Loss: {loss}')
     print(f'Validation Accuracy: {accuracy}')
+
+    # Predict on validation set
+    y_pred = np.argmax(model.predict(val_images), axis=1)
+    y_true = np.argmax(val_labels, axis=1)
+
+    # Plot and save the confusion matrix
+    plot_confusion_matrix(y_true, y_pred, label_dict, output_confusion_matrix_path)
+    print(f'Confusion matrix saved to {output_confusion_matrix_path}')
 
 
 if __name__ == "__main__":

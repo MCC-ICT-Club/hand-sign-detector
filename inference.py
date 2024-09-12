@@ -52,6 +52,7 @@ def main():
         # Predict the class
         predictions = model.predict(preprocessed_frame)
         predicted_class = np.argmax(predictions, axis=1)[0]
+
         class_name = label_names[predicted_class]
 
         # Display the result on the frame
