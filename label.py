@@ -1,14 +1,19 @@
 import os
 import shutil
+import json
 
 import cv2
+
+def get_classes_from_json(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+        return data['classes']
 
 # Define paths
 raw_image_dir = 'raw/'
 labeled_image_dir = 'labeled/'
 tmp_dir = "tmp/"
-label_names = ['thumbs_up', 'pinkie_out', 'index_up']  # Update with your labels
-
+label_names = get_classes_from_json("classes.json")  # Update with your labels
 # Create directories if they don't exist
 for label in label_names:
     os.makedirs(os.path.join(labeled_image_dir, label), exist_ok=True)
