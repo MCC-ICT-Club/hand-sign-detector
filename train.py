@@ -15,6 +15,8 @@ epochs = 20
 num_classes = 50
 use_bounding_boxes = False
 
+tf.get_logger().setLevel('ERROR')
+
 tf.config.run_functions_eagerly(True)
 
 
@@ -121,7 +123,7 @@ def main():
         train_dataset,
         epochs=epochs,
         validation_data=val_dataset,
-        callbacks=[early_stopping, model_checkpoint]
+        callbacks=[model_checkpoint,] #early_stopping]
     )
 
     # Evaluate the model
