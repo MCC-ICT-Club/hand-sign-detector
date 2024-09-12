@@ -119,7 +119,7 @@ def main():
         MaxPooling2D((2, 2)),
         Dropout(0.5),
         Flatten(),
-        Dense(512, activation='relu'),
+        Dense(128, activation='relu'),
         Dropout(0.5),
         Dense(num_classes, activation='softmax')
     ])
