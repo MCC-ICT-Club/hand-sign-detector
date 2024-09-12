@@ -20,7 +20,7 @@ mixed_precision.set_global_policy('mixed_float16')
 # Define paths
 labeled_image_dir = 'labeled/'
 image_size = (640, 480)  # Resize images to this size
-batch_size = 8
+batch_size = 4
 epochs = 80
 num_classes = 11
 use_bounding_boxes = False
