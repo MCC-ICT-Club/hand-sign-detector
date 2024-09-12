@@ -94,49 +94,39 @@ def main():
     split = int(len(images) * 0.8)
     train_images, val_images = images[:split], images[split:]
     train_labels, val_labels = labels[:split], labels[split:]
-    #
-    # # Create TensorFlow datasets
-    # train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels))
-    # train_dataset = train_dataset.shuffle(buffer_size=1000).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-    #
+
     val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
     val_dataset = val_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
     y_train = labels_raw  # Use labels_raw directly for class weights calculation
 
 
-    # for images, labels in train_dataset.take(1):
-    #     print('Train images shape:', images.shape)
-    #     print('Train labels shape:', labels.shape)
-    #
-    # for images, labels in val_dataset.take(1):
-    #     print('Validation images shape:', images.shape)
-    #     print('Validation labels shape:', labels.shape)
 
     # Define the CNN model
     model = Sequential([
         Input(shape=(image_size[0], image_size[1], 3)),
-        Conv2D(32, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Dropout(0.2),  # Add dropout
         Conv2D(64, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
-        Dropout(0.3),  # Add dropout
+        Dropout(0.3),
         Conv2D(128, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
+        Dropout(0.4),
+        Conv2D(256, (3, 3), activation='relu'),
+        MaxPooling2D((2, 2)),
+        Dropout(0.5),
         Flatten(),
-        Dense(128, activation='relu'),
-        Dropout(0.4),  # Add dropout
+        Dense(512, activation='relu'),
+        Dropout(0.5),
         Dense(num_classes, activation='softmax')
     ])
-
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
     # Compile the model
-    model.compile(optimizer='adam',
+    model.compile(optimizer=optimizer,
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
 
     # Callbacks
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=40, restore_best_weights=True)
     lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, verbose=1)
 
     model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
