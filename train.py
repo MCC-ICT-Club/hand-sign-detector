@@ -131,7 +131,8 @@ def main():
 
     # Callbacks
     early_stopping = EarlyStopping(monitor='val_loss', patience=40, restore_best_weights=True)
-    lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, verbose=1)
+    lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=35, min_lr=1e-7, verbose=1)
+
 
     model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
     datagen = ImageDataGenerator(
