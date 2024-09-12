@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from keras import Sequential
 from keras.src.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input
 
 # Define paths
 labeled_image_dir = 'labeled/'
