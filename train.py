@@ -12,6 +12,9 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input,
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
+policy = mixed_precision.Policy('mixed_float16')
+mixed_precision.set_policy(policy)
 
 # Define paths
 labeled_image_dir = 'labeled/'
