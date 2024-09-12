@@ -110,16 +110,19 @@ def main():
 
     # Define the CNN model
     model = Sequential([
-        Input(shape=(image_size[0], image_size[1], 3)),  # Specify input shape here
+        Input(shape=(image_size[0], image_size[1], 3)),
         Conv2D(32, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
+        Dropout(0.2),  # Add dropout
         Conv2D(64, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
+        Dropout(0.3),  # Add dropout
         Conv2D(128, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
         Flatten(),
         Dense(128, activation='relu'),
-        Dense(num_classes, activation='softmax')  # num_classes for the output layer
+        Dropout(0.4),  # Add dropout
+        Dense(num_classes, activation='softmax')
     ])
 
     # Compile the model
@@ -128,30 +131,38 @@ def main():
                   metrics=['accuracy'])
 
     # Callbacks
-    early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, verbose=1)
+
     model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
     datagen = ImageDataGenerator(
-        rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
+        rotation_range=30,
+        width_shift_range=0.3,
+        height_shift_range=0.3,
+        brightness_range=[0.5, 1.5],  # Add brightness augmentation
+        zoom_range=0.3,
         shear_range=0.2,
-        zoom_range=0.2,
         horizontal_flip=True,
         fill_mode='nearest'
     )
+
+    class_weights = {i: len(train_images) / (len(label_dict) * np.bincount(y_train)[i]) for i in range(num_classes)}
+
     # Train the model
     model.fit(
         datagen.flow(train_images, train_labels, batch_size=batch_size),
         epochs=epochs,
+        class_weight=class_weights,
         validation_data=val_dataset,
-        callbacks=[model_checkpoint, early_stopping]
+        callbacks=[model_checkpoint, early_stopping, lr_scheduler]
     )
     # # Train the model
     # model.fit(
     #     train_dataset,
     #     epochs=epochs,
+    #     class_weight = class_weights,
     #     validation_data=val_dataset,
-    #     callbacks=[model_checkpoint, early_stopping]
+    #     callbacks=[model_checkpoint, early_stopping, lr_scheduler]
     # )
 
     # Evaluate the model
