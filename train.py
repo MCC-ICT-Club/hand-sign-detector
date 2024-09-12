@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 # Define paths
 labeled_image_dir = 'labeled/'
 image_size = (640, 480)  # Resize images to this size
-batch_size = 16
+batch_size = 8
 epochs = 80
 num_classes = 11
 use_bounding_boxes = False
