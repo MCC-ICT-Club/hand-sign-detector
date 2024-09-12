@@ -85,32 +85,33 @@ def main():
 
     # Convert labels to one-hot encoding
     label_dict = {name: idx for idx, name in enumerate(sorted(set(labels)))}
+    label_list = sorted(set(labels), key=lambda x: (x[0], int(x[1:])))
+    labels_raw = np.array([label_list.index(label) for label in labels])
     labels = np.array([label_dict[label] for label in labels])
     labels = tf.keras.utils.to_categorical(labels, num_classes=num_classes)
 
-    # Split data into training and validation sets
+    # # Split data into training and validation sets
     split = int(len(images) * 0.8)
     train_images, val_images = images[:split], images[split:]
     train_labels, val_labels = labels[:split], labels[split:]
-
-    # Create TensorFlow datasets
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels))
-    train_dataset = train_dataset.shuffle(buffer_size=1000).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-
+    #
+    # # Create TensorFlow datasets
+    # train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels))
+    # train_dataset = train_dataset.shuffle(buffer_size=1000).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    #
     val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
     val_dataset = val_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-    # Convert labels to numerical format (before one-hot encoding)
-    y_train = label_dict
+    y_train = labels_raw  # Use labels_raw directly for class weights calculation
 
 
-    for images, labels in train_dataset.take(1):
-        print('Train images shape:', images.shape)
-        print('Train labels shape:', labels.shape)
-
-    for images, labels in val_dataset.take(1):
-        print('Validation images shape:', images.shape)
-        print('Validation labels shape:', labels.shape)
+    # for images, labels in train_dataset.take(1):
+    #     print('Train images shape:', images.shape)
+    #     print('Train labels shape:', labels.shape)
+    #
+    # for images, labels in val_dataset.take(1):
+    #     print('Validation images shape:', images.shape)
+    #     print('Validation labels shape:', labels.shape)
 
     # Define the CNN model
     model = Sequential([
@@ -150,7 +151,8 @@ def main():
         fill_mode='nearest'
     )
 
-    class_weights = {i: len(train_images) / (len(label_dict) * np.bincount(y_train)[i]) for i in range(num_classes)}
+    class_weights = {i: len(y_train) / (len(label_list) * np.bincount(y_train)[i]) for i in range(num_classes)}
+
 
     # Train the model
     model.fit(
