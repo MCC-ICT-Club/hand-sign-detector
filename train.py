@@ -128,7 +128,7 @@ def main():
                   metrics=['accuracy'])
 
     # Callbacks
-    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
     model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
     datagen = ImageDataGenerator(
         rotation_range=20,
