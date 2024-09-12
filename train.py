@@ -7,24 +7,10 @@ tf.get_logger().setLevel('ERROR')
 from keras import Sequential
 from keras.src.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input
-# Get a list of GPU devices
-gpus = tf.config.list_physical_devices('GPU')
-
-if gpus:
-    try:
-        # Set memory limit for each GPU device
-        for gpu in gpus:
-            tf.config.experimental.set_virtual_device_configuration(
-                gpu,
-                [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=8000)]  # memory limit in MB
-            )
-    except RuntimeError as e:
-        print(e)
-
 # Define paths
 labeled_image_dir = 'labeled/'
 image_size = (640, 480)  # Resize images to this size
-batch_size = 32
+batch_size = 16
 epochs = 80
 num_classes = 11
 use_bounding_boxes = False
