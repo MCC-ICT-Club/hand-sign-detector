@@ -21,34 +21,11 @@ for label in label_names:
     os.makedirs(os.path.join(tmp_dir), exist_ok=True)
 
 
-def draw_rectangle(event, x, y, flags, param):
-    global ix, iy, drawing, label, img_name
-    if event == cv2.EVENT_LBUTTONDOWN:
-        ix, iy = x, y
-        drawing = True
-    elif event == cv2.EVENT_MOUSEMOVE:
-        if drawing:
-            temp_img = img.copy()
-            cv2.rectangle(temp_img, (ix, iy), (x, y), (0, 255, 0), 2)
-            cv2.imshow('Image', temp_img)
-    elif event == cv2.EVENT_LBUTTONUP:
-        drawing = False
-        cv2.rectangle(img, (ix, iy), (x, y), (0, 255, 0), 2)
-        cv2.imshow('Image', img)
-        box = (ix, iy, x, y)
-        # Save the bounding box to a temporary file
-        label_dir = os.path.join(tmp_dir)
-        with open(os.path.join(label_dir, img_name + '.txt'), 'a') as f:
-            f.write(f"{box[0]} {box[1]} {box[2]} {box[3]}\n")
-        print(f"Bounding box saved: {box}")
-
-
 def label_image(image_path):
     global img, drawing, ix, iy, label, img_name
     img = cv2.imread(image_path)
     img_name = os.path.splitext(os.path.basename(image_path))[0]
     cv2.imshow('Image', img)
-    cv2.setMouseCallback('Image', draw_rectangle)
 
     print("Press keys to label the image:")
     for i in range(len(label_names)):

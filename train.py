@@ -1,184 +1,139 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from keras.src.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+
 import os
 
-import cv2
-import numpy as np
-import tensorflow as tf
-from keras.src.legacy.preprocessing.image import ImageDataGenerator
-from keras import Sequential
-from keras.src.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Input, Dropout
-from sklearn.metrics import confusion_matrix
-import seaborn as sns
-import matplotlib.pyplot as plt
-from tensorflow.keras import mixed_precision
+# Define the path to your dataset
+data_dir = 'labeled'  # Replace with the path to your 'labeled' folder
 
-tf.get_logger().setLevel('ERROR')
+# Set image size and batch size
+img_height = 480
+img_width = 640
+batch_size = 32
 
-mixed_precision.set_global_policy('mixed_float16')
+# Load the dataset with a training and validation split
+train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,   # 80% training, 20% validation
+    subset="training",
+    seed=123,               # Seed for reproducibility
+    image_size=(img_height, img_width),
+    batch_size=batch_size)
 
+val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,   # 80% training, 20% validation
+    subset="validation",
+    seed=123,
+    image_size=(img_height, img_width),
+    batch_size=batch_size)
 
-# Define paths
-labeled_image_dir = 'labeled/'
-image_size = (640, 480)  # Resize images to this size
-batch_size = 16
-epochs = 80
-num_classes = 11
-use_bounding_boxes = False
-output_confusion_matrix_path = 'confusion_matrix.png'  # Path to save confusion matrix
+# Get class names and number of classes
+class_names = train_ds.class_names
+num_classes = len(class_names)
 
-tf.config.run_functions_eagerly(True)
+# Normalize pixel values to [0, 1]
+normalization_layer = layers.Rescaling(1./255)
+train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
 
+# Optimize dataset performance
+AUTOTUNE = tf.data.AUTOTUNE
+train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
-def plot_confusion_matrix(y_true, y_pred, label_dict, output_path):
-    cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(10, 7))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=label_dict.keys(),
-                yticklabels=label_dict.keys())
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title('Confusion Matrix')
-    plt.savefig(output_path)
-    plt.close()
+# Build the CNN model
+model = models.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(img_height, img_width, 3)),
+    layers.MaxPooling2D((2, 2)),
 
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
 
-# Helper function to load images and labels
-def load_data_from_directory(directory):
-    images = []
-    labels = []
-    for label_name in os.listdir(directory):
-        label_path = os.path.join(directory, label_name)
-        if os.path.isdir(label_path):
-            for img_file in os.listdir(label_path):
-                if img_file.endswith('.jpg') or img_file.endswith('.png'):
-                    img_path = os.path.join(label_path, img_file)
-                    label = label_name
-                    if use_bounding_boxes:
-                        bounding_boxes = []
+    layers.Conv2D(128, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
 
-                        # Load bounding box file
-                        bbox_file = os.path.splitext(img_path)[0] + '.txt'
-                        if os.path.exists(bbox_file):
-                            with open(bbox_file, 'r') as f:
-                                for line in f:
-                                    bbox = list(map(int, line.strip().split()))
-                                    bounding_boxes.append(bbox)
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(num_classes, activation='softmax')  # Output layer
+])
 
-                    # Read image
-                    img = cv2.imread(img_path)
-                    if use_bounding_boxes:
-                        for bbox in bounding_boxes:
-                            x1, y1, x2, y2 = bbox
-                            cropped_img = img[y1:y2, x1:x2]
-                            resized_img = cv2.resize(cropped_img, (image_size[1], image_size[0]))
-                            images.append(resized_img)
-                            labels.append(label)
-                    else:
-                        resized_img = cv2.resize(img, (image_size[1], image_size[0]))
-                        images.append(resized_img)
-                        labels.append(label)
+# Compile the model with optimizer, loss function, and metrics
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
 
-    images = np.array(images)
-    labels = np.array(labels)
-    return images, labels
+# Print the model architecture
+model.summary()
 
+# Define a custom callback to save confusion matrix at each epoch
+class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
+    def __init__(self, val_data, class_names):
+        super().__init__()
+        self.val_data = val_data
+        self.class_names = class_names
 
-def main():
-    # Load the data
-    images, labels = load_data_from_directory(labeled_image_dir)
+    def on_epoch_end(self, epoch, logs=None):
+        if (epoch + 1) % 2 != 0:  # Change 2 to any interval you prefer
+            return
+        val_labels = []
+        val_predictions = []
 
-    # Convert labels to one-hot encoding
-    label_dict = {name: idx for idx, name in enumerate(sorted(set(labels)))}
-    label_list = sorted(set(labels), key=lambda x: (x[0], int(x[1:])))
-    labels_raw = np.array([label_list.index(label) for label in labels])
-#    labels = np.array([label_dict[label] for label in labels])
-    labels = tf.keras.utils.to_categorical(labels_raw, num_classes=num_classes)
+        # Iterate over the validation dataset to get predictions
+        for images, labels in self.val_data:
+            preds = self.model.predict(images, verbose=0)
+            val_predictions.extend(np.argmax(preds, axis=1))
+            val_labels.extend(labels.numpy())
 
-    # # Split data into training and validation sets
-    split = int(len(images) * 0.8)
-    train_images, val_images = images[:split], images[split:]
-    train_labels, val_labels = labels[:split], labels[split:]
+        # Generate confusion matrix
+        cm = confusion_matrix(val_labels, val_predictions)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=self.class_names)
 
-    val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
-    val_dataset = val_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        # Plot confusion matrix
+        plt.figure(figsize=(10, 8))
+        disp.plot(cmap=plt.cm.Blues, values_format='d')
+        plt.title(f'Confusion Matrix - Epoch {epoch + 1}')
 
-    y_train = labels_raw  # Use labels_raw directly for class weights calculation
+        # Save the confusion matrix as a PNG image
+        plt.savefig(f'confusion_matrix_epoch_{epoch + 1}.png')
+        plt.close()
 
+# Create an instance of the callback
+confusion_matrix_callback = ConfusionMatrixCallback(val_ds, class_names)
 
+# Train the model with the custom callback
+epochs = 10  # You can adjust the number of epochs
+model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
 
-    # Define the CNN model
-    model = Sequential([
-        Input(shape=(image_size[0], image_size[1], 3)),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Dropout(0.3),
-        Conv2D(128, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Dropout(0.4),
-        Conv2D(256, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Dropout(0.5),
-        Flatten(),
-        Dense(128, activation='relu'),
-        Dropout(0.5),
-        Dense(num_classes, activation='softmax')
-    ])
-    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-    # Compile the model
-    model.compile(optimizer=optimizer,
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
+history = model.fit(
+    train_ds,
+    validation_data=val_ds,
+    epochs=epochs,
+    callbacks=[confusion_matrix_callback, model_checkpoint]
+)
 
-    # Callbacks
-    early_stopping = EarlyStopping(monitor='val_loss', patience=40, restore_best_weights=True)
-    lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=35, min_lr=1e-7, verbose=1)
+# Generate and save the final confusion matrix after training
+val_labels = []
+val_predictions = []
 
+for images, labels in val_ds:
+    preds = model.predict(images)
+    val_predictions.extend(np.argmax(preds, axis=1))
+    val_labels.extend(labels.numpy())
 
-    model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
-    datagen = ImageDataGenerator(
-        rotation_range=30,
-        width_shift_range=0.3,
-        height_shift_range=0.3,
-        brightness_range=[0.5, 1.5],  # Add brightness augmentation
-        zoom_range=0.3,
-        shear_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest'
-    )
+# Generate confusion matrix
+cm = confusion_matrix(val_labels, val_predictions)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 
-    class_weights = {i: len(y_train) / (len(label_list) * np.bincount(y_train)[i]) for i in range(num_classes)}
+# Plot confusion matrix
+plt.figure(figsize=(10, 8))
+disp.plot(cmap=plt.cm.Blues, values_format='d')
+plt.title('Confusion Matrix - Final')
 
-
-    # Train the model
-    model.fit(
-        datagen.flow(train_images, train_labels, batch_size=batch_size),
-        epochs=epochs,
-        class_weight=class_weights,
-        validation_data=val_dataset,
-        callbacks=[model_checkpoint, early_stopping, lr_scheduler]
-    )
-    # # Train the model
-    # model.fit(
-    #     train_dataset,
-    #     epochs=epochs,
-    #     class_weight = class_weights,
-    #     validation_data=val_dataset,
-    #     callbacks=[model_checkpoint, early_stopping, lr_scheduler]
-    # )
-
-    # Evaluate the model
-    loss, accuracy = model.evaluate(val_dataset)
-    print(f'Validation Loss: {loss}')
-    print(f'Validation Accuracy: {accuracy}')
-
-    # Predict on validation set
-    y_pred = np.argmax(model.predict(val_images), axis=1)
-    y_true = np.argmax(val_labels, axis=1)
-
-    # Plot and save the confusion matrix
-    plot_confusion_matrix(y_true, y_pred, label_dict, output_confusion_matrix_path)
-    print(f'Confusion matrix saved to {output_confusion_matrix_path}')
-
-
-if __name__ == "__main__":
-    main()
+# Save the confusion matrix as a PNG image
+plt.savefig('confusion_matrix_final.png')
+plt.close()

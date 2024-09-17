@@ -7,7 +7,7 @@ import json
 model = tf.keras.models.load_model('hand_sign_model.keras')
 
 # Define image size (should match the size used during training)
-image_size = (640, 480)
+image_size = (320, 240)
 
 
 def get_classes_from_json(file_path):
@@ -21,8 +21,9 @@ label_names = get_classes_from_json("classes.json")  # Update with your actual l
 
 
 def preprocess_image(image):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     # Resize image to the size expected by the model
-    resized_img = cv2.resize(image, image_size)
+    resized_img = cv2.resize(image, [image_size[1], image_size[0]])
     # Normalize the image
     normalized_img = resized_img / 255.0
     # Add batch dimension
@@ -32,7 +33,7 @@ def preprocess_image(image):
 
 def main():
     # Open the webcam
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         return
