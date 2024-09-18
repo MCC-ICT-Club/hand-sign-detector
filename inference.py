@@ -5,7 +5,7 @@ import json
 import os
 
 USE_IMAGES = False
-path = "labeled/G2"
+path = "labeled/G5"
 
 # Load the trained model
 model = tf.keras.models.load_model('hand_sign_model.keras')
