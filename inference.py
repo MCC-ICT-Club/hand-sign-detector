@@ -4,14 +4,15 @@ import tensorflow as tf
 import json
 import os
 
-USE_IMAGES = False
-path = "labeled/G5"
+USE_IMAGES = True
+path = "labeled/G2"
 
 # Load the trained model
 model = tf.keras.models.load_model('hand_sign_model.keras')
 
 # Define image size (should match the size used during training)
 image_size = (640, 480)
+
 
 
 def get_classes_from_json(file_path):

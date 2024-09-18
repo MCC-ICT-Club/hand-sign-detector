@@ -1,6 +1,6 @@
 import tensorflow as tf
 from beepy import beep
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers, models, regularizers
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
@@ -14,20 +14,20 @@ data_dir = 'labeled'  # Replace with the path to your 'labeled' folder
 # Set image size and batch size
 img_height = 480
 img_width = 640
-batch_size = 32
+batch_size = 8
 
 # Load the dataset with a training and validation split
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     data_dir,
-    validation_split=0.3,   # 80% training, 20% validation
+    validation_split=0.3,  # 80% training, 20% validation
     subset="training",
-    seed=123,               # Seed for reproducibility
+    seed=123,  # Seed for reproducibility
     image_size=(img_height, img_width),
     batch_size=batch_size)
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     data_dir,
-    validation_split=0.3,   # 80% training, 20% validation
+    validation_split=0.3,  # 80% training, 20% validation
     subset="validation",
     seed=123,
     image_size=(img_height, img_width),
@@ -38,9 +38,19 @@ class_names = train_ds.class_names
 num_classes = len(class_names)
 
 # Normalize pixel values to [0, 1]
-normalization_layer = layers.Rescaling(1./255)
+normalization_layer = layers.Rescaling(1. / 255)
 train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
 val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
+
+# data_augmentation = tf.keras.Sequential([
+#     layers.RandomFlip('horizontal_and_vertical'),
+#     layers.RandomRotation(0.2),
+#     layers.RandomZoom(0.1),
+#     layers.RandomContrast(0.1),
+# ])
+#
+# train_ds = train_ds.map(lambda x, y: (data_augmentation(x, training=True), y))
+
 
 # Optimize dataset performance
 AUTOTUNE = tf.data.AUTOTUNE
@@ -69,17 +79,20 @@ model = models.Sequential([
     layers.InputLayer(shape=(img_height, img_width, 3)),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(32, (3, 3), activation='relu'),
+    layers.Conv2D(32, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(128, (3, 3), activation='relu'),
+    layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.MaxPooling2D((2, 2)),
+
+    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
 
     layers.Flatten(),
-    layers.Dense(128, activation='relu'),
+    layers.Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.Dense(num_classes, activation='softmax')  # Output layer
 ])
 
@@ -97,6 +110,7 @@ os.makedirs('confusion_matrices/epoch_matrices', exist_ok=True)
 # Save class names to a JSON file
 with open('classes.json', 'w') as f:
     json.dump(class_names, f)
+
 
 # Define a custom callback to save confusion matrix at each epoch
 class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
@@ -127,6 +141,7 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
         # Save the confusion matrix as a PNG image
         plt.savefig(f'confusion_matrices/epoch_matrices/confusion_matrix_epoch_{epoch + 1}.png')
         plt.close()
+
 
 # Create an instance of the callback
 confusion_matrix_callback = ConfusionMatrixCallback(val_images, val_labels, class_names)
