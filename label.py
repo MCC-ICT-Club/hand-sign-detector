@@ -7,8 +7,7 @@ import cv2
 
 def get_classes_from_json(file_path):
     with open(file_path, 'r') as file:
-        data = json.load(file)
-        return data['classes']
+        return json.load(file)
 
 # Define paths
 raw_image_dir = 'raw/'

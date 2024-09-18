@@ -1,11 +1,12 @@
 import tensorflow as tf
+from beepy import beep
 from tensorflow.keras import layers, models
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-from keras.src.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 import os
+import json
 
 # Define the path to your dataset
 data_dir = 'labeled'  # Replace with the path to your 'labeled' folder
@@ -18,7 +19,7 @@ batch_size = 32
 # Load the dataset with a training and validation split
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     data_dir,
-    validation_split=0.2,   # 80% training, 20% validation
+    validation_split=0.3,   # 80% training, 20% validation
     subset="training",
     seed=123,               # Seed for reproducibility
     image_size=(img_height, img_width),
@@ -26,7 +27,7 @@ train_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     data_dir,
-    validation_split=0.2,   # 80% training, 20% validation
+    validation_split=0.3,   # 80% training, 20% validation
     subset="validation",
     seed=123,
     image_size=(img_height, img_width),
@@ -46,9 +47,29 @@ AUTOTUNE = tf.data.AUTOTUNE
 train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
 val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
+# Load the entire validation dataset into memory
+val_images_list = []
+val_labels_list = []
+
+for images, labels in val_ds:
+    val_images_list.append(images)
+    val_labels_list.append(labels)
+
+# Concatenate all images and labels
+val_images = tf.concat(val_images_list, axis=0)
+val_labels = tf.concat(val_labels_list, axis=0)
+
+# Now, create a new tf.data.Dataset for validation that won't be consumed
+val_ds_for_fit = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
+val_ds_for_fit = val_ds_for_fit.batch(batch_size)
+val_ds_for_fit = val_ds_for_fit.cache().prefetch(buffer_size=AUTOTUNE)
+
 # Build the CNN model
 model = models.Sequential([
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(img_height, img_width, 3)),
+    layers.InputLayer(shape=(img_height, img_width, 3)),
+    layers.MaxPooling2D((2, 2)),
+
+    layers.Conv2D(32, (3, 3), activation='relu'),
     layers.MaxPooling2D((2, 2)),
 
     layers.Conv2D(64, (3, 3), activation='relu'),
@@ -70,24 +91,29 @@ model.compile(optimizer='adam',
 # Print the model architecture
 model.summary()
 
+# Create directory for confusion matrices
+os.makedirs('confusion_matrices/epoch_matrices', exist_ok=True)
+
+# Save class names to a JSON file
+with open('classes.json', 'w') as f:
+    json.dump(class_names, f)
+
 # Define a custom callback to save confusion matrix at each epoch
 class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
-    def __init__(self, val_data, class_names):
+    def __init__(self, val_images, val_labels, class_names):
         super().__init__()
-        self.val_data = val_data
+        self.val_images = val_images
+        self.val_labels = val_labels
         self.class_names = class_names
 
     def on_epoch_end(self, epoch, logs=None):
         if (epoch + 1) % 2 != 0:  # Change 2 to any interval you prefer
             return
-        val_labels = []
-        val_predictions = []
 
-        # Iterate over the validation dataset to get predictions
-        for images, labels in self.val_data:
-            preds = self.model.predict(images, verbose=0)
-            val_predictions.extend(np.argmax(preds, axis=1))
-            val_labels.extend(labels.numpy())
+        # Generate predictions
+        preds = self.model.predict(self.val_images, verbose=0)
+        val_predictions = np.argmax(preds, axis=1)
+        val_labels = self.val_labels.numpy()
 
         # Generate confusion matrix
         cm = confusion_matrix(val_labels, val_predictions)
@@ -99,34 +125,33 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
         plt.title(f'Confusion Matrix - Epoch {epoch + 1}')
 
         # Save the confusion matrix as a PNG image
-        plt.savefig(f'confusion_matrix_epoch_{epoch + 1}.png')
+        plt.savefig(f'confusion_matrices/epoch_matrices/confusion_matrix_epoch_{epoch + 1}.png')
         plt.close()
 
 # Create an instance of the callback
-confusion_matrix_callback = ConfusionMatrixCallback(val_ds, class_names)
+confusion_matrix_callback = ConfusionMatrixCallback(val_images, val_labels, class_names)
 
 # Train the model with the custom callback
-epochs = 10  # You can adjust the number of epochs
+epochs = 50  # You can adjust the number of epochs
 model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
+
+early_stopping = EarlyStopping(monitor='val_loss', patience=40, restore_best_weights=True)
+lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=35, min_lr=1e-7, verbose=1)
 
 history = model.fit(
     train_ds,
-    validation_data=val_ds,
+    validation_data=val_ds_for_fit,
     epochs=epochs,
-    callbacks=[confusion_matrix_callback, model_checkpoint]
+    callbacks=[confusion_matrix_callback, model_checkpoint, early_stopping, lr_scheduler]
 )
 
 # Generate and save the final confusion matrix after training
-val_labels = []
-val_predictions = []
-
-for images, labels in val_ds:
-    preds = model.predict(images)
-    val_predictions.extend(np.argmax(preds, axis=1))
-    val_labels.extend(labels.numpy())
+preds = model.predict(val_images, verbose=0)
+val_predictions = np.argmax(preds, axis=1)
+val_labels_array = val_labels.numpy()
 
 # Generate confusion matrix
-cm = confusion_matrix(val_labels, val_predictions)
+cm = confusion_matrix(val_labels_array, val_predictions)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 
 # Plot confusion matrix
@@ -135,5 +160,9 @@ disp.plot(cmap=plt.cm.Blues, values_format='d')
 plt.title('Confusion Matrix - Final')
 
 # Save the confusion matrix as a PNG image
-plt.savefig('confusion_matrix_final.png')
+plt.savefig('confusion_matrices/confusion_matrix_final.png')
 plt.close()
+
+print("done")
+beep(sound="ping")
+exit(0)

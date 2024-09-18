@@ -6,3 +6,4 @@ tensorrt
 scikit-learn
 seaborn
 matplotlib
+beepy
