@@ -42,16 +42,6 @@ normalization_layer = layers.Rescaling(1. / 255)
 train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
 val_ds = val_ds.map(lambda x, y: (normalization_layer(x), y))
 
-# data_augmentation = tf.keras.Sequential([
-#     layers.RandomFlip('horizontal_and_vertical'),
-#     layers.RandomRotation(0.2),
-#     layers.RandomZoom(0.1),
-#     layers.RandomContrast(0.1),
-# ])
-#
-# train_ds = train_ds.map(lambda x, y: (data_augmentation(x, training=True), y))
-
-
 # Optimize dataset performance
 AUTOTUNE = tf.data.AUTOTUNE
 train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
