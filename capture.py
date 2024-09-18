@@ -1,6 +1,10 @@
+import time
+
 import cv2
 import os
 import json
+cam_device = 0
+mirror = False
 
 def get_classes_from_json(file_path):
     with open(file_path, 'r') as file:
@@ -31,7 +35,16 @@ class_dir = os.path.join(data_dir, class_label)
 os.makedirs(class_dir, exist_ok=True)
 
 # Initialize webcam
-cap = cv2.VideoCapture(0)  # Use 0 or the index of your webcam
+cap = cv2.VideoCapture(cam_device)
+if not cap.isOpened():
+    retries = 0
+    while not cap.isOpened() and retries < 5:
+        print("Error: Could not open webcam. Trying again...")
+        cap = cv2.VideoCapture(cam_device)
+        retries += 1
+        time.sleep(0.2)
+    print("Error: Could not open webcam.")
+
 
 if not cap.isOpened():
     print("Error: Could not open webcam")
@@ -46,12 +59,12 @@ while True:
     ret, frame = cap.read()
     if not ret:
         print("Failed to grab frame")
-        break
+        continue
 
     # Resize the frame if necessary
     frame_resized = cv2.resize(frame, (img_width, img_height))
-
-    frame_resized = cv2.flip(frame_resized, 1)
+    if mirror:
+        frame_resized = cv2.flip(frame_resized, 1)
 
     # Display instructions on the frame
     cv2.putText(frame_resized, f'Capturing for class: {class_label}', (10, 30),

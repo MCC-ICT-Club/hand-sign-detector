@@ -1,11 +1,15 @@
+import time
+
 import cv2
 import numpy as np
 import tensorflow as tf
 import json
 import os
 
-USE_IMAGES = True
+USE_IMAGES = False
 path = "labeled/G2"
+cam_device = 0
+
 
 # Load the trained model
 model = tf.keras.models.load_model('hand_sign_model.keras')
@@ -32,12 +36,17 @@ def preprocess_image(image):
     # Add batch dimension
     return normalized_img
 
-
 def main():
     # Open the webcam
     if not USE_IMAGES:
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(cam_device)
         if not cap.isOpened():
+            retries = 0
+            while not cap.isOpened() and retries < 5:
+                print("Error: Could not open webcam. Trying again...")
+                cap = cv2.VideoCapture(cam_device)
+                retries += 1
+                time.sleep(0.2)
             print("Error: Could not open webcam.")
             return
 
@@ -49,7 +58,7 @@ def main():
             ret, frame = cap.read()
             if not ret:
                 print("Error: Could not read frame.")
-                break
+                continue
 
             preprocessed_frame = preprocess_image(frame)
 
