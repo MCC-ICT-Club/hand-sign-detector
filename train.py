@@ -112,7 +112,7 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
         self.class_names = class_names
 
     def on_epoch_end(self, epoch, logs=None):
-        if (epoch + 1) % 2 != 0:  # Change 2 to any interval you prefer
+        if (epoch + 1) % 5 != 0:  # Change 2 to any interval you prefer
             return
 
         # Generate predictions
