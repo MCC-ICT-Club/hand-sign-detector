@@ -76,8 +76,7 @@ model = models.Sequential([
 
     # layers.Dense(64, activation='relu'),
 
-    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
-    # , kernel_regularizer=regularizers.l2(0.001)),
+    layers.Conv2D(256, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.BatchNormalization(),
     layers.MaxPooling2D((2, 2)),
     layers.Dropout(0.2),
@@ -96,7 +95,7 @@ model = models.Sequential([
     layers.MaxPooling2D((2, 2)),
     layers.Dropout(0.5),
 
-    layers.Dense(64, activation='relu'),
+    layers.Dense(256, activation='relu'),
     layers.Dense(64, activation='relu'),
 
     layers.Flatten(),
@@ -104,8 +103,8 @@ model = models.Sequential([
     layers.Dense(num_classes, activation='softmax')  # Output layer
 ])
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
-lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-7, verbose=1)
+early_stopping = EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=True)
+# lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-7, verbose=1)
 # Compile the model with optimizer, loss function, and metrics
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
     initial_learning_rate=0.001,
