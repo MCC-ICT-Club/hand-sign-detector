@@ -1,24 +1,23 @@
 import time
 import cv2
 import numpy as np
-import tensorflow as tf
 import json
 import os
-import requests  # For sending HTTP requests to the server
+import requests
+import concurrent.futures  # For asynchronous server requests
 
 USE_IMAGES = False
-USE_SERVER = True  # Set to True to use the server for prediction
-SERVER_URL = 'http://localhost:5000/predict'  # Adjust if your server is running elsewhere
+USE_SERVER = True
+SERVER_URL = 'http://jupiter:5000/predict'  # Adjust if your server is running elsewhere
 path = "labeled/G2"
 cam_device = 0
 
-# Load the trained model only if not using the server
-if not USE_SERVER:
-    model = tf.keras.models.load_model('hand_sign_model.keras')
-    print("Loaded Model")
-
 # Define image size (should match the size used during training)
 image_size = (640, 480)
+
+# Initialize variables
+last_predicted_class = "Loading..."  # To store the last predicted class
+is_waiting_for_response = False  # To track if we're waiting for a server response
 
 
 def get_classes_from_json(file_path):
@@ -35,11 +34,20 @@ def preprocess_image(image):
     resized_img = cv2.resize(image, [image_size[0], image_size[1]])
     # Normalize the image
     normalized_img = resized_img / 255.0
-    # Add batch dimension
-    return normalized_img
+    return resized_img  # Returning resized image to display on the frame
+
+
+def send_frame_to_server(frame):
+    # Send the image to the server asynchronously
+    _, img_encoded = cv2.imencode('.jpg', frame)
+    response = requests.post(SERVER_URL, files={'image': img_encoded.tobytes()})
+    return response
 
 
 def main():
+    global last_predicted_class
+    global is_waiting_for_response
+
     # Open the webcam
     if not USE_IMAGES:
         cap = cv2.VideoCapture(cam_device)
@@ -55,94 +63,60 @@ def main():
                 return
 
     print("Press 'q' to quit.")
-    run_loop = True
-    while run_loop:
-        # Capture frame-by-frame
-        if not USE_IMAGES:
-            ret, frame = cap.read()
-            if not ret:
-                print("Error: Could not read frame.")
-                continue
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = None
 
-            if USE_SERVER:
-                # Encode the image as JPEG
-                _, img_encoded = cv2.imencode('.jpg', frame)
-                # Send the image to the server
-                response = requests.post(SERVER_URL, files={'image': img_encoded.tobytes()})
-                if response.status_code == 200:
-                    result = response.json()
-                    class_name = result['predicted_class']
-                else:
-                    print('Error:', response.text)
-                    class_name = 'Error'
+        run_loop = True
+        while run_loop:
+            # Capture frame-by-frame
+            if not USE_IMAGES:
+                ret, frame = cap.read()
+                if not ret:
+                    print("Error: Could not read frame.")
+                    continue
 
-                # Display the result on the frame
-                cv2.putText(frame, f'Predicted: {class_name}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                            (0, 255, 0), 2, cv2.LINE_AA)
-                cv2.imshow('Webcam Feed', frame)
-                key = cv2.waitKey(1) & 0xFF
-                # Exit on 'q' key press
-                if key == ord('q'):
-                    break
-            else:
+                # Preprocess the frame
                 preprocessed_frame = preprocess_image(frame)
-                # Predict the class
-                predictions = model.predict(np.expand_dims(preprocessed_frame, axis=0), verbose=0)
-                predicted_class = np.argmax(predictions, axis=1)[0]
-                class_name = label_names[predicted_class]
-                # Display the result on the frame
-                cv2.putText(frame, f'Predicted: {class_name}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                            (0, 255, 0), 2, cv2.LINE_AA)
-                cv2.imshow('Webcam Feed', frame)
+
+                # Display the current frame with the last predicted class
+                cv2.putText(preprocessed_frame, f'Predicted: {last_predicted_class}', (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                cv2.imshow('Webcam Feed', preprocessed_frame)
+
                 key = cv2.waitKey(1) & 0xFF
-                # Exit on 'q' key press
                 if key == ord('q'):
                     break
-        else:
-            files = os.listdir(path)
-            for i in files:
-                frame = cv2.imread(os.path.join(path, i))
-                if USE_SERVER:
-                    # Encode the image as JPEG
-                    _, img_encoded = cv2.imencode('.jpg', frame)
-                    # Send the image to the server
-                    response = requests.post(SERVER_URL, files={'image': img_encoded.tobytes()})
+
+                # If not currently waiting for a server response, send the current frame
+                if not is_waiting_for_response:
+                    is_waiting_for_response = True  # Mark that we're waiting for a response
+                    future = executor.submit(send_frame_to_server, frame)
+
+                # Check if the server response has arrived
+                if future and future.done():
+                    response = future.result()
                     if response.status_code == 200:
                         result = response.json()
-                        class_name = result['predicted_class']
+                        last_predicted_class = result['predicted_class']
                     else:
                         print('Error:', response.text)
-                        class_name = 'Error'
+                        last_predicted_class = 'Error'
 
-                    # Display the result on the frame
-                    cv2.putText(frame, f'Predicted: {class_name}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                (0, 255, 0), 2, cv2.LINE_AA)
-                    cv2.imshow('Image Feed', frame)
-                    key = cv2.waitKey(0) & 0xFF
-                    # Exit on 'q' key press
-                    if key == ord('q'):
-                        run_loop = False
-                        break
-                    elif key == ord('c'):
-                        continue
-                else:
+                    # Reset the flag to allow sending the next frame
+                    is_waiting_for_response = False
+            else:
+                # Image processing mode if using images instead of webcam
+                files = os.listdir(path)
+                for i in files:
+                    frame = cv2.imread(os.path.join(path, i))
                     preprocessed_frame = preprocess_image(frame)
-                    # Predict the class
-                    predictions = model.predict(np.expand_dims(preprocessed_frame, axis=0), verbose=0)
-                    predicted_class = np.argmax(predictions, axis=1)[0]
-                    class_name = label_names[predicted_class]
-                    print(f'Predicted: {class_name}')
-                    # Display the result on the frame
-                    cv2.putText(frame, f'Predicted: {class_name}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                (0, 255, 0), 2, cv2.LINE_AA)
-                    cv2.imshow('Image Feed', frame)
+                    cv2.putText(preprocessed_frame, f'Predicted: {last_predicted_class}', (10, 30),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    cv2.imshow('Image Feed', preprocessed_frame)
                     key = cv2.waitKey(0) & 0xFF
-                    # Exit on 'q' key press
                     if key == ord('q'):
                         run_loop = False
                         break
-                    elif key == ord('c'):
-                        continue
 
     # Release the webcam and close windows
     if not USE_IMAGES:
