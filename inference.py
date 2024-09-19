@@ -7,8 +7,8 @@ import requests
 import concurrent.futures  # For asynchronous server requests
 import tensorflow as tf
 
-USE_IMAGES = True
-USE_SERVER = False
+USE_IMAGES = False
+USE_SERVER = True
 SERVER_URL = 'http://jupiter:5000/predict'  # Adjust if your server is running elsewhere
 path = "labeled/G2"
 cam_device = 0
@@ -118,11 +118,20 @@ def main():
                 for i in files:
                     frame = cv2.imread(os.path.join(path, i))
                     preprocessed_frame = preprocess_image(frame)
-                    predictions = model.predict(np.expand_dims(preprocessed_frame, axis=0), verbose=0)
-                    predicted_class = np.argmax(predictions, axis=1)[0]
+                    if not USE_SERVER:
+                        predictions = model.predict(np.expand_dims(preprocessed_frame, axis=0), verbose=0)
+                        predicted_class = np.argmax(predictions, axis=1)[0]
 
-                    class_name = label_names[predicted_class]
-                    last_predicted_class = class_name
+                        class_name = label_names[predicted_class]
+                        last_predicted_class = class_name
+                    else:
+                        response = send_frame_to_server(frame)
+                        if response.status_code == 200:
+                            result = response.json()
+                            last_predicted_class = result['predicted_class']
+                        else:
+                            print('Error:', response.text)
+                            last_predicted_class = 'Error'
 
                     cv2.putText(preprocessed_frame, f'Predicted: {last_predicted_class}', (10, 30),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
