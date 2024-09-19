@@ -9,3 +9,5 @@ matplotlib
 pydot==1.4.2
 graphviz
 beepy
+flask
+requests
