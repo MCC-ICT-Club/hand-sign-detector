@@ -6,14 +6,14 @@ import tensorflow as tf
 import json
 import os
 
-USE_IMAGES = True
+USE_IMAGES = False
 path = "labeled/G2"
 cam_device = 0
 
 
 # Load the trained model
 model = tf.keras.models.load_model('hand_sign_model.keras')
-
+print("loaded Model")
 # Define image size (should match the size used during training)
 image_size = (640, 480)
 
