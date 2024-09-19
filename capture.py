@@ -4,7 +4,7 @@ import cv2
 import os
 import json
 cam_device = 0
-mirror = False
+mirror = True
 
 def get_classes_from_json(file_path):
     with open(file_path, 'r') as file:

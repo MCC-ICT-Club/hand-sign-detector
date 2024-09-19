@@ -10,7 +10,8 @@ import json
 
 # Define the path to your dataset
 data_dir = 'labeled'  # Replace with the path to your 'labeled' folder
-epochs = 100  # You can adjust the number of epochs
+val_dir = 'validation'
+epochs = 150  # You can adjust the number of epochs
 
 # Set image size and batch size
 img_height = 480
@@ -20,16 +21,12 @@ batch_size = 8
 # Load the dataset with a training and validation split
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     data_dir,
-    validation_split=0.3,  # 80% training, 20% validation
-    subset="training",
     seed=123,  # Seed for reproducibility
     image_size=(img_height, img_width),
     batch_size=batch_size)
 
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-    data_dir,
-    validation_split=0.3,  # 80% training, 20% validation
-    subset="validation",
+    val_dir,
     seed=123,
     image_size=(img_height, img_width),
     batch_size=batch_size)
