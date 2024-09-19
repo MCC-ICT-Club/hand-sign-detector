@@ -67,18 +67,26 @@ model = models.Sequential([
     layers.InputLayer(shape=(img_height, img_width, 3)),
     layers.MaxPooling2D((2, 2)),
 
+    layers.Dense(256, activation='relu'),
+
     layers.Conv2D(64, (3, 3), activation='relu'),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.Dense(128, activation='relu'),
+
+    layers.Conv2D(128, (3, 3), activation='relu'), #, kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
     layers.Dropout(0.2),
+
+    layers.Dense(128, activation='relu'),
 
     layers.Conv2D(256, (3, 3), activation='relu'),
     layers.MaxPooling2D((2, 2)),
     layers.Dropout(0.2),
 
-    layers.Conv2D(256, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.Dense(128, activation='relu'),
+
+    layers.Conv2D(256, (3, 3), activation='relu'),
     layers.MaxPooling2D((2, 2)),
 
     layers.Flatten(),
