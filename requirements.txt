@@ -6,5 +6,6 @@ tensorrt
 scikit-learn
 seaborn
 matplotlib
-pydot
+pydot==1.4.2
+graphviz
 beepy

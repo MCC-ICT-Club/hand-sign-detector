@@ -10,6 +10,7 @@ import json
 
 # Define the path to your dataset
 data_dir = 'labeled'  # Replace with the path to your 'labeled' folder
+epochs = 100  # You can adjust the number of epochs
 
 # Set image size and batch size
 img_height = 480
@@ -81,6 +82,9 @@ model = models.Sequential([
     layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
 
+    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.MaxPooling2D((2, 2)),
+
     layers.Flatten(),
     layers.Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.Dense(num_classes, activation='softmax')  # Output layer
@@ -137,7 +141,6 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
 confusion_matrix_callback = ConfusionMatrixCallback(val_images, val_labels, class_names)
 
 # Train the model with the custom callback
-epochs = 50  # You can adjust the number of epochs
 model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
 
 early_stopping = EarlyStopping(monitor='val_loss', patience=40, restore_best_weights=True)
