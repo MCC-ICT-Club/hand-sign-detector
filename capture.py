@@ -1,19 +1,31 @@
 import time
-
 import cv2
 import os
 import json
+
 cam_device = 0
 mirror = True
 
 def get_classes_from_json(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
+
+def get_unique_filename(directory, base_filename, extension):
+    """
+    This function returns a unique filename in the given directory by appending a counter if a file already exists.
+    """
+    counter = 0
+    file_path = os.path.join(directory, f"{base_filename}{extension}")
+    while os.path.exists(file_path):
+        counter += 1
+        file_path = os.path.join(directory, f"{base_filename}_{counter}{extension}")
+    return file_path
+
 # Configuration
-data_dir = 'captured_data'  # Directory where captured images will be stored
+data_dir = 'labeled'  # Directory where captured images will be stored
 img_height = 480
 img_width = 640
-capture_interval = 1  # Number of frames to skip between captures
+capture_interval = 0  # Number of frames to skip between captures
 
 # Create the data directory if it doesn't exist
 os.makedirs(data_dir, exist_ok=True)
@@ -44,7 +56,6 @@ if not cap.isOpened():
         retries += 1
         time.sleep(0.2)
     print("Error: Could not open webcam.")
-
 
 if not cap.isOpened():
     print("Error: Could not open webcam")
@@ -78,8 +89,8 @@ while True:
     key = cv2.waitKey(1) & 0xFF
 
     if key == ord(' '):  # Spacebar to capture
-        img_filename = f'{class_label}_{img_count:04d}.jpg'
-        img_path = os.path.join(class_dir, img_filename)
+        base_filename = f'{class_label}_{img_count:04d}'
+        img_path = get_unique_filename(class_dir, base_filename, '.jpg')
         frame_resized2 = cv2.resize(frame, (img_width, img_height))
         cv2.imwrite(img_path, frame_resized2)
         print(f"Image saved: {img_path}")
