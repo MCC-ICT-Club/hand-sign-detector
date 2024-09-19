@@ -73,13 +73,13 @@ model = models.Sequential([
     layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
-    layers.MaxPooling2D((2, 2)),
-
     layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.Conv2D(256, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.MaxPooling2D((2, 2)),
+
+    layers.Conv2D(256, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.MaxPooling2D((2, 2)),
 
     layers.Flatten(),
@@ -112,7 +112,7 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
         self.class_names = class_names
 
     def on_epoch_end(self, epoch, logs=None):
-        if (epoch + 1) % 5 != 0:  # Change 2 to any interval you prefer
+        if (epoch + 1) % 20 != 0:  # Change 2 to any interval you prefer
             return
 
         # Generate predictions
@@ -140,8 +140,8 @@ confusion_matrix_callback = ConfusionMatrixCallback(val_images, val_labels, clas
 # Train the model with the custom callback
 model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=40, restore_best_weights=True)
-lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=35, min_lr=1e-7, verbose=1)
+early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
+lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-7, verbose=1)
 
 history = model.fit(
     train_ds,

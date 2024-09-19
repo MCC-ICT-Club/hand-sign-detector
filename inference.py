@@ -6,8 +6,8 @@ import tensorflow as tf
 import json
 import os
 
-USE_IMAGES = False
-path = "labeled/G2"
+USE_IMAGES = True
+path = "validation/G1"
 cam_device = 0
 
 
