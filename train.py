@@ -1,5 +1,6 @@
 import tensorflow as tf
 from beepy import beep
+from sklearn.utils import class_weight
 from tensorflow.keras import layers, models, regularizers
 import numpy as np
 import matplotlib.pyplot as plt
@@ -67,35 +68,52 @@ model = models.Sequential([
     layers.InputLayer(shape=(img_height, img_width, 3)),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Dense(64, activation='relu'),
+    # layers.Dense(64, activation='relu'),
 
-    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.BatchNormalization(),
     layers.MaxPooling2D((2, 2)),
 
-    layers.Dense(64, activation='relu'),
+    # layers.Dense(64, activation='relu'),
 
-    layers.Conv2D(128, (3, 3), activation='relu'), #, kernel_regularizer=regularizers.l2(0.001)),
-    layers.MaxPooling2D((2, 2)),
-    layers.Dropout(0.2),
-
-    layers.Dense(64, activation='relu'),
-
-    layers.Conv2D(256, (3, 3), activation='relu'),
+    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    # , kernel_regularizer=regularizers.l2(0.001)),
+    layers.BatchNormalization(),
     layers.MaxPooling2D((2, 2)),
     layers.Dropout(0.2),
 
-    layers.Dense(64, activation='relu'),
+    # layers.Dense(64, activation='relu'),
 
-    layers.Conv2D(256, (3, 3), activation='relu'),
+    layers.Conv2D(512, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.BatchNormalization(),
     layers.MaxPooling2D((2, 2)),
+    layers.Dropout(0.2),
+
+    # layers.Dense(64, activation='relu'),
+
+    layers.Conv2D(512, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D((2, 2)),
+    layers.Dropout(0.5),
+
+    layers.Dense(64, activation='relu'),
+    layers.Dense(64, activation='relu'),
 
     layers.Flatten(),
     layers.Dense(256, activation='relu'),
     layers.Dense(num_classes, activation='softmax')  # Output layer
 ])
 
+early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
+lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-7, verbose=1)
 # Compile the model with optimizer, loss function, and metrics
-model.compile(optimizer='adam',
+lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate=0.001,
+    decay_steps=10000,
+    decay_rate=0.9
+)
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+model.compile(optimizer=optimizer,
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
@@ -146,15 +164,28 @@ confusion_matrix_callback = ConfusionMatrixCallback(val_images, val_labels, clas
 
 # Train the model with the custom callback
 model_checkpoint = ModelCheckpoint('hand_sign_model.keras', save_best_only=True)
+train_labels = []
+for images, labels in train_ds.unbatch():
+    train_labels.append(labels.numpy())
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
-lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-7, verbose=1)
+# Convert the list to a numpy array
+train_labels = np.array(train_labels)
 
+# Calculate class weights
+class_weights = class_weight.compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(train_labels),
+    y=train_labels
+)
+
+# Convert the weights to a dictionary where the key is the class index
+class_weight_dict = {i: class_weights[i] for i in range(len(class_weights))}
 history = model.fit(
     train_ds,
     validation_data=val_ds_for_fit,
     epochs=epochs,
-    callbacks=[confusion_matrix_callback, model_checkpoint, early_stopping, lr_scheduler]
+    class_weight=class_weight_dict,
+    callbacks=[confusion_matrix_callback, model_checkpoint, early_stopping]  # , lr_scheduler]
 )
 
 # Generate and save the final confusion matrix after training
