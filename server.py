@@ -7,7 +7,7 @@ import json
 app = Flask(__name__)
 
 # Load the trained model
-model = tf.keras.models.load_model('hand_sign_model.keras')
+model = tf.keras.models.load_model('hand_sign_model_final.keras')
 print("Model loaded.")
 
 # Define image size (should match the size used during training)

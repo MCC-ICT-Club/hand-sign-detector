@@ -12,7 +12,7 @@ import json
 # Define the path to your dataset
 data_dir = 'labeled'  # Replace with the path to your 'labeled' folder
 val_dir = 'validation'
-epochs = 150  # You can adjust the number of epochs
+epochs = 300  # You can adjust the number of epochs
 
 # Set image size and batch size
 img_height = 480
@@ -68,27 +68,23 @@ model = models.Sequential([
     layers.InputLayer(shape=(img_height, img_width, 3)),
     layers.MaxPooling2D((2, 2)),
 
-    # layers.Dense(64, activation='relu'),
-
     layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.BatchNormalization(),
     layers.MaxPooling2D((2, 2)),
 
-    # layers.Dense(64, activation='relu'),
+    layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D((2, 2)),
 
     layers.Conv2D(256, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.BatchNormalization(),
     layers.MaxPooling2D((2, 2)),
     layers.Dropout(0.2),
 
-    # layers.Dense(64, activation='relu'),
-
     layers.Conv2D(512, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.BatchNormalization(),
     layers.MaxPooling2D((2, 2)),
     layers.Dropout(0.2),
-
-    # layers.Dense(64, activation='relu'),
 
     layers.Conv2D(512, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(0.001)),
     layers.BatchNormalization(),
@@ -103,7 +99,7 @@ model = models.Sequential([
     layers.Dense(num_classes, activation='softmax')  # Output layer
 ])
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=True)
+early_stopping = EarlyStopping(monitor='val_loss', patience=70, restore_best_weights=True)
 # lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-7, verbose=1)
 # Compile the model with optimizer, loss function, and metrics
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -186,6 +182,7 @@ history = model.fit(
     class_weight=class_weight_dict,
     callbacks=[confusion_matrix_callback, model_checkpoint, early_stopping]  # , lr_scheduler]
 )
+model.save('hand_sign_model_final.keras')
 
 # Generate and save the final confusion matrix after training
 preds = model.predict(val_images, verbose=0)
