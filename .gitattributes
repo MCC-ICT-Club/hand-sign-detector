@@ -1324,3 +1324,4 @@ labeled filter=lfs diff=lfs merge=lfs -text
 confusion_matrices/ filter=lfs diff=lfs merge=lfs -text
 hand_sign_model.keras filter=lfs diff=lfs merge=lfs -text
 validation filter=lfs diff=lfs merge=lfs -text
+hand_sign_model_final.keras filter=lfs diff=lfs merge=lfs -text

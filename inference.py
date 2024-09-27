@@ -7,8 +7,8 @@ import requests
 import concurrent.futures  # For asynchronous server requests
 import tensorflow as tf
 
-USE_IMAGES = False
-USE_SERVER = True
+USE_IMAGES = True
+USE_SERVER = False
 SERVER_URL = 'http://jupiter:5000/predict'  # Adjust if your server is running elsewhere
 path = "labeled/G4"
 cam_device = 0
