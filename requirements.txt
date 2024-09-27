@@ -11,3 +11,4 @@ graphviz
 beepy
 flask
 requests
+gunicorn

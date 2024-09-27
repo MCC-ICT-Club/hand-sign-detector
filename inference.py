@@ -10,7 +10,7 @@ import tensorflow as tf
 USE_IMAGES = False
 USE_SERVER = True
 SERVER_URL = 'http://jupiter:5000/predict'  # Adjust if your server is running elsewhere
-path = "labeled/G2"
+path = "labeled/G4"
 cam_device = 0
 
 # Define image size (should match the size used during training)
