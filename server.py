@@ -30,7 +30,7 @@ request_queue = queue.Queue()
 
 def inference_thread_func():
     # Load the trained model
-    model = tf.keras.models.load_model('hand_sign_model.keras')
+    model = tf.keras.models.load_model('hand_sign_model_final.keras')
     print("Model loaded in inference thread.")
 
     while True:

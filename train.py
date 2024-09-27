@@ -99,7 +99,7 @@ model = models.Sequential([
     layers.Dense(num_classes, activation='softmax')  # Output layer
 ])
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=70, restore_best_weights=True)
+early_stopping = EarlyStopping(monitor='val_loss', patience=80, restore_best_weights=True)
 # lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, min_lr=1e-7, verbose=1)
 # Compile the model with optimizer, loss function, and metrics
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
