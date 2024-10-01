@@ -1,3 +1,6 @@
+import os
+import re
+
 from flask import Flask, request, jsonify
 import tensorflow as tf
 import numpy as np
@@ -52,6 +55,48 @@ inference_thread.start()
 @app.route('/classes', methods=['GET'])
 def get_classes():
     return jsonify(get_classes_from_json("classes.json"))
+
+def get_next_file_number(class_name):
+    directory = f'uploads/{class_name}'
+    if not os.path.exists(directory):
+        return 0
+
+    files = os.listdir(directory)
+    numbers = []
+
+    for file in files:
+        match = re.search(r'(\d+)$', file)
+        if match:
+            numbers.append(int(match.group(1)))
+
+    if numbers:
+        return max(numbers) + 1
+    else:
+        return 0
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image provided.'}), 400
+
+    file = request.files['image']
+    # Read the image via file.stream
+    img_bytes = file.read()
+    img_np = np.frombuffer(img_bytes, np.uint8)
+    image = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
+    if image is None:
+        return jsonify({'error': 'Invalid image.'}), 400
+    preprocessed_image = preprocess_image(image)
+    class_name = request.json.get('class_name')
+    if not class_name or not isinstance(class_name, str) or class_name.strip() == '' or class_name not in label_names:
+        return jsonify({'error': 'Class name not provided. or not in the current list of classes'}), 400    # scan the
+        # directory and collect the file name
+
+    num = get_next_file_number(class_name)
+    with open(f"uploads/{class_name}/image{num}") as file:
+        file.write(preprocessed_image)
+
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
