@@ -87,10 +87,9 @@ def upload():
     if image is None:
         return jsonify({'error': 'Invalid image.'}), 400
     preprocessed_image = preprocess_image(image)
-    class_name = request.json.get('class_name')
+    class_name = request.form.get('class_name')
     if not class_name or not isinstance(class_name, str) or class_name.strip() == '' or class_name not in label_names:
-        return jsonify({'error': 'Class name not provided. or not in the current list of classes'}), 400    # scan the
-        # directory and collect the file name
+        return jsonify({'error': 'Class name not provided or not in the current list of classes'}), 400
 
     num = get_next_file_number(class_name)
     if not os.path.exists(f'uploads/{class_name}'):
