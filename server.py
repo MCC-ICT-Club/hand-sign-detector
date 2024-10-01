@@ -65,7 +65,7 @@ def get_next_file_number(class_name):
     numbers = []
 
     for file in files:
-        match = re.search(r'(\d+)$', file)
+        match = re.search(r'(.*\d+)$', file)
         if match:
             numbers.append(int(match.group(1)))
 
