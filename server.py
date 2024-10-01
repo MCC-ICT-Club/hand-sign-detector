@@ -93,6 +93,8 @@ def upload():
         # directory and collect the file name
 
     num = get_next_file_number(class_name)
+    if not os.path.exists(f'uploads/{class_name}'):
+        os.makedirs(f'uploads/{class_name}')
     with open(f"uploads/{class_name}/image{num}") as file:
         file.write(preprocessed_image)
 
