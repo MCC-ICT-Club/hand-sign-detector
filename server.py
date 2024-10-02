@@ -65,7 +65,7 @@ def get_next_file_number(class_name):
     numbers = []
 
     for file in files:
-        match = re.search(r'(.*\d+)$', file)
+        match = re.search(r'(\d+).*$', file)
         if match:
             numbers.append(int(match.group(1)))
 
@@ -94,7 +94,7 @@ def upload():
     num = get_next_file_number(class_name)
     if not os.path.exists(f'uploads/{class_name}'):
         os.makedirs(f'uploads/{class_name}')
-    with open(f"uploads/{class_name}/image{num}.png", "wb") as file:
+    with open(f"uploads/{class_name}/image_{num}.png", "wb") as file:
         file.write(preprocessed_image)
 
     return jsonify({'message': 'Image uploaded successfully.'})
@@ -130,4 +130,4 @@ def predict():
     return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)
