@@ -136,7 +136,29 @@ def predict():
     if image is None:
         return jsonify({'error': 'Invalid image.'}), 400
 
-    preprocessed_image = preprocess_image(image)
+    h, w = image.shape[:2]
+    target_w, target_h = image_size  # Assuming image_size is a tuple (width, height)
+
+    # Calculate the aspect ratio for the target and the original image
+    target_aspect_ratio = target_w / target_h
+    original_aspect_ratio = w / h
+
+    # Cropping the image to maintain the aspect ratio without stretching
+    if original_aspect_ratio > target_aspect_ratio:
+        # The image is too wide, crop the sides
+        new_w = int(target_aspect_ratio * h)
+        start_x = (w - new_w) // 2
+        cropped_image = image[:, start_x:start_x + new_w]
+    else:
+        # The image is too tall, crop the top and bottom
+        new_h = int(w / target_aspect_ratio)
+        start_y = (h - new_h) // 2
+        cropped_image = image[start_y:start_y + new_h, :]
+
+    # Resize the cropped image to the target size
+    preprocessed_image = cv2.resize(cropped_image, (target_w, target_h))
+
+    preprocessed_image = preprocess_image(preprocessed_image)
     # Add batch dimension
     input_data = np.expand_dims(preprocessed_image, axis=0)
 
