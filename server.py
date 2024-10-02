@@ -86,7 +86,8 @@ def upload():
     image = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
     if image is None:
         return jsonify({'error': 'Invalid image.'}), 400
-    preprocessed_image = preprocess_image(image)
+    preprocessed_image = cv2.resize(image, [image_size[0], image_size[1]])
+
     class_name = request.form.get('class_name')
     if not class_name or not isinstance(class_name, str) or class_name.strip() == '' or class_name not in label_names:
         return jsonify({'error': 'Class name not provided or not in the current list of classes'}), 400
