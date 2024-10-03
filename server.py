@@ -114,7 +114,8 @@ def upload():
         return jsonify({'error': 'Class name not provided or not in the current list of classes'}), 400
 
     num = get_next_file_number(class_name)
-
+    if not os.path.exists(f'uploads/{class_name}'):
+        os.makedirs(f'uploads/{class_name}')
     save_path = f"uploads/{class_name}/image_{num}.png"
     if cv2.imwrite(save_path, preprocessed_image):
         return jsonify({'message': 'Image uploaded and saved successfully.'})
