@@ -51,7 +51,7 @@ def inference_thread_func():
     model = None
     start_time = time.time()
     current_time = time.time()
-    model_loaded = False
+    model_loaded = os.path.exists(model_path)
     model_in_memory = False
     print("Model loaded in inference thread.")
 
