@@ -58,7 +58,7 @@ def inference_thread_func():
 
     while True:
         item = request_queue.get()
-        if current_time - start_time > 20:
+        if abs(current_time - start_time) > 20:
             del model  # Deletes the model instance
             model = None
             tf.keras.backend.clear_session()  # Frees up GPU memory
