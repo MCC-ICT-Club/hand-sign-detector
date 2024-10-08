@@ -57,10 +57,10 @@ def inference_thread_func():
 
     while True:
         try:
-            item = request_queue.get(timeout=0.5)
+            item = request_queue.get(block=False)
         except queue.Empty:
             item = None
-        if abs(current_time - start_time) > 10 and model_in_memory:
+        if current_time - start_time > 10 and model_in_memory:
             del model
             gc.collect()
             model = None
