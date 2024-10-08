@@ -58,10 +58,10 @@ def inference_thread_func():
 
     while True:
         try:
-            item = request_queue.get(block=False)
+            item = request_queue.get(timeout=1)
         except queue.Empty:
             item = None
-        if abs(current_time - start_time) > 20:
+        if abs(current_time - start_time) > 10:
             model = None
             tf.keras.backend.clear_session()  # Frees up GPU memory
             print("Model unloaded.")
