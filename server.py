@@ -49,12 +49,9 @@ def inference_thread_func():
     global model_loaded
     # Load the trained model
     model = None
-    if model is None:
-        print("Failed to load the model.")
-        return
     start_time = time.time()
     current_time = time.time()
-    model_loaded = True
+    model_loaded = False
     model_in_memory = False
     print("Model loaded in inference thread.")
 
