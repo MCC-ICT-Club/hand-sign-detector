@@ -57,7 +57,7 @@ def inference_thread_func():
     print("Model loaded in inference thread.")
 
     while True:
-        item = request_queue.get()
+        item = request_queue.get(block=False)
         if abs(current_time - start_time) > 20:
             del model  # Deletes the model instance
             model = None
