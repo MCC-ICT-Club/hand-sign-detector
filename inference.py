@@ -7,6 +7,15 @@ import requests
 import concurrent.futures  # For asynchronous server requests
 import tensorflow as tf
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Set memory growth for each GPU
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+
 USE_IMAGES = True
 USE_SERVER = False
 SERVER_URL = 'http://jupiter:5000/predict'  # Adjust if your server is running elsewhere

@@ -8,8 +8,20 @@ import cv2
 import json
 import threading
 import queue
+model_path = 'hand_sign_model_final.keras'
 
 app = Flask(__name__)
+
+model_loaded = False
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Set memory growth for each GPU
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 
 # Define image size (should match the size used during training)
 image_size = (640, 480)
@@ -32,8 +44,13 @@ def preprocess_image(image):
 request_queue = queue.Queue()
 
 def inference_thread_func():
+    global model_loaded
     # Load the trained model
-    model = tf.keras.models.load_model('hand_sign_model_final.keras')
+    model = tf.keras.models.load_model(model_path)
+    if model is None:
+        print("Failed to load the model.")
+        return
+    model_loaded = True
     print("Model loaded in inference thread.")
 
     while True:
@@ -136,6 +153,12 @@ def predict():
     image = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
     if image is None:
         return jsonify({'error': 'Invalid image.'}), 400
+
+    if not os.path.exists(model_path):
+        return jsonify({'error': 'Model not found. Please train a model first.'}),
+
+    if not model_loaded:
+        return jsonify({'error': 'Model not loaded yet. Please try again later.'}), 500
 
     h, w = image.shape[:2]
     target_w, target_h = image_size  # Assuming image_size is a tuple (width, height)

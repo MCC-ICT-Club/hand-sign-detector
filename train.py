@@ -9,6 +9,17 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLRO
 import os
 import json
 
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Set memory growth for each GPU
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+
+
 # Define the path to your dataset
 data_dir = 'labeled'  # Replace with the path to your 'labeled' folder
 val_dir = 'validation'
