@@ -1,3 +1,4 @@
+import gc
 import os
 import re
 import time
@@ -54,6 +55,7 @@ def inference_thread_func():
     start_time = time.time()
     current_time = time.time()
     model_loaded = True
+    model_in_memory = True
     print("Model loaded in inference thread.")
 
     while True:
@@ -61,14 +63,18 @@ def inference_thread_func():
             item = request_queue.get(timeout=2)
         except queue.Empty:
             item = None
-        if abs(current_time - start_time) > 10:
+        if abs(current_time - start_time) > 10 and model_in_memory:
+            del model
+            gc.collect()
             model = None
             tf.keras.backend.clear_session()  # Frees up GPU memory
+            model_in_memory = False
             print("Model unloaded.")
         if item is None:
             continue
         if model is None:
             model = tf.keras.models.load_model(model_path)  # Reloads the model
+            model_in_memory = True
             print("Model reloaded.")
         current_time = time.time()
         input_data, result_queue = item
