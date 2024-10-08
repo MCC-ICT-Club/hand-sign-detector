@@ -62,10 +62,12 @@ def inference_thread_func():
             del model  # Deletes the model instance
             model = None
             tf.keras.backend.clear_session()  # Frees up GPU memory
+            print("Model unloaded.")
         if item is None:
             break
         if model is None:
             model = tf.keras.models.load_model(model_path)  # Reloads the model
+            print("Model reloaded.")
         current_time = time.time()
         input_data, result_queue = item
         # Predict the class
