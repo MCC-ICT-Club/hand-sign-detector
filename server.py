@@ -60,10 +60,12 @@ def inference_thread_func():
         item = request_queue.get()
         if current_time - start_time > 20:
             del model  # Deletes the model instance
+            model = None
             tf.keras.backend.clear_session()  # Frees up GPU memory
-            model = tf.keras.models.load_model(model_path)  # Reloads the model
         if item is None:
             break
+        if model is None:
+            model = tf.keras.models.load_model(model_path)  # Reloads the model
         current_time = time.time()
         input_data, result_queue = item
         # Predict the class
