@@ -2,13 +2,22 @@ import time
 import cv2
 import os
 import json
+import requests
+
+from inference import SERVER_URL
 
 cam_device = 0
 mirror = True
 
+USE_SERVER = True
+SERVER_URL = 'http://jupiter:5000'
+
 def get_classes_from_json(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
+def get_class_names_from_server():
+    response = requests.get(SERVER_URL + "/classes")
+    return response.json()
 
 def get_unique_filename(directory, base_filename, extension):
     """
@@ -28,10 +37,13 @@ img_width = 640
 capture_interval = 0  # Number of frames to skip between captures
 
 # Create the data directory if it doesn't exist
-os.makedirs(data_dir, exist_ok=True)
+if not USE_SERVER:
+    os.makedirs(data_dir, exist_ok=True)
 
 # List of class names (labels)
-class_names = get_classes_from_json("classes.json")
+    class_names = get_classes_from_json("classes.json")
+else:
+    class_names = get_class_names_from_server()
 
 print("Available classes:")
 for idx, class_name in enumerate(class_names):
@@ -89,12 +101,24 @@ while True:
     key = cv2.waitKey(1) & 0xFF
 
     if key == ord(' '):  # Spacebar to capture
-        base_filename = f'{class_label}_{img_count:04d}'
-        img_path = get_unique_filename(class_dir, base_filename, '.jpg')
-        frame_resized2 = cv2.resize(frame, (img_width, img_height))
-        cv2.imwrite(img_path, frame_resized2)
-        print(f"Image saved: {img_path}")
-        img_count += 1
+        if not USE_SERVER:
+            base_filename = f'{class_label}_{img_count:04d}'
+            img_path = get_unique_filename(class_dir, base_filename, '.jpg')
+            frame_resized2 = cv2.resize(frame, (img_width, img_height))
+            cv2.imwrite(img_path, frame_resized2)
+            print(f"Image saved: {img_path}")
+            img_count += 1
+        else:
+            # Encode the image as a PNG
+            _, img_encoded = cv2.imencode('.png', frame_resized)
+            files = {'image': ('image.png', img_encoded.tobytes(), 'image/png')}
+            data = {'class_name': class_label}
+            response = requests.post(SERVER_URL + "/upload", files=files, data=data)
+            if response.status_code == 200:
+                print("Image uploaded and saved successfully.")
+            else:
+                print(f"Failed to upload image. Server responded with status code {response.status_code}")
+
 
     elif key == ord('q'):  # 'q' to quit
         print("Quitting...")

@@ -111,6 +111,12 @@ def upload():
     image = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
     if image is None:
         return jsonify({'error': 'Invalid image.'}), 400
+
+    class_name = request.form.get('class_name')
+    if not class_name or not isinstance(class_name, str) or class_name.strip() == '' or class_name not in label_names:
+        return jsonify({'error': 'Class name not provided or not in the current list of classes'}), 400
+
+
     # Get the current dimensions of the image
     h, w = image.shape[:2]
     target_w, target_h = image_size  # Assuming image_size is a tuple (width, height)
@@ -134,9 +140,7 @@ def upload():
     # Resize the cropped image to the target size
     preprocessed_image = cv2.resize(cropped_image, (target_w, target_h))
 
-    class_name = request.form.get('class_name')
-    if not class_name or not isinstance(class_name, str) or class_name.strip() == '' or class_name not in label_names:
-        return jsonify({'error': 'Class name not provided or not in the current list of classes'}), 400
+
 
     num = get_next_file_number(class_name)
     if not os.path.exists(f'uploads/{class_name}'):
