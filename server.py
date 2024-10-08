@@ -49,18 +49,19 @@ def inference_thread_func():
     global model_loaded
     # Load the trained model
     model = None
-    start_time = time.time()
+    prev_time = time.time()
     current_time = time.time()
     model_loaded = os.path.exists(model_path)
     model_in_memory = False
     print("Model loaded in inference thread.")
 
     while True:
+        current_time = time.time()
         try:
-            item = request_queue.get(block=False)
+            item = request_queue.get(timeout=2)
         except queue.Empty:
             item = None
-        if current_time - start_time > 10 and model_in_memory:
+        if current_time - prev_time > 10 and model_in_memory:
             del model
             gc.collect()
             model = None
@@ -75,7 +76,7 @@ def inference_thread_func():
             if not model_loaded:
                 model_loaded = True
             print("Model reloaded.")
-        current_time = time.time()
+        prev_time = time.time()
         input_data, result_queue = item
         # Predict the class
         predictions = model.predict(input_data, verbose=0)
