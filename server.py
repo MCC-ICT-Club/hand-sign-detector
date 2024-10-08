@@ -58,7 +58,7 @@ def inference_thread_func():
 
     while True:
         try:
-            item = request_queue.get(block=False, timeout=None)
+            item = request_queue.get(timeout=2)
         except queue.Empty:
             item = None
         if abs(current_time - start_time) > 10:
@@ -66,8 +66,7 @@ def inference_thread_func():
             tf.keras.backend.clear_session()  # Frees up GPU memory
             print("Model unloaded.")
         if item is None:
-            print("item is none so skipping")
-            break
+            continue
         if model is None:
             model = tf.keras.models.load_model(model_path)  # Reloads the model
             print("Model reloaded.")
