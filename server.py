@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 from flask import Flask, request, jsonify
 import tensorflow as tf
@@ -50,13 +51,20 @@ def inference_thread_func():
     if model is None:
         print("Failed to load the model.")
         return
+    start_time = time.time()
+    current_time = time.time()
     model_loaded = True
     print("Model loaded in inference thread.")
 
     while True:
         item = request_queue.get()
+        if current_time - start_time > 20:
+            del model  # Deletes the model instance
+            tf.keras.backend.clear_session()  # Frees up GPU memory
+            model = tf.keras.models.load_model(model_path)  # Reloads the model
         if item is None:
             break
+        current_time = time.time()
         input_data, result_queue = item
         # Predict the class
         predictions = model.predict(input_data, verbose=0)
