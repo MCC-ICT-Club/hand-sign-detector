@@ -16,14 +16,14 @@ app = Flask(__name__)
 
 model_loaded = False
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        # Set memory growth for each GPU
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+#     try:
+#         # Set memory growth for each GPU
+#         for gpu in gpus:
+#             tf.config.experimental.set_memory_growth(gpu, True)
+#     except RuntimeError as e:
+#         print(e)
 
 # Define image size (should match the size used during training)
 image_size = (640, 480)
@@ -48,19 +48,19 @@ request_queue = queue.Queue()
 def inference_thread_func():
     global model_loaded
     # Load the trained model
-    model = tf.keras.models.load_model(model_path)
+    model = None
     if model is None:
         print("Failed to load the model.")
         return
     start_time = time.time()
     current_time = time.time()
     model_loaded = True
-    model_in_memory = True
+    model_in_memory = False
     print("Model loaded in inference thread.")
 
     while True:
         try:
-            item = request_queue.get(timeout=2)
+            item = request_queue.get(timeout=0.5)
         except queue.Empty:
             item = None
         if abs(current_time - start_time) > 10 and model_in_memory:
@@ -75,6 +75,8 @@ def inference_thread_func():
         if model is None:
             model = tf.keras.models.load_model(model_path)  # Reloads the model
             model_in_memory = True
+            if not model_loaded:
+                model_loaded = True
             print("Model reloaded.")
         current_time = time.time()
         input_data, result_queue = item
