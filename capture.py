@@ -4,8 +4,6 @@ import os
 import json
 import requests
 
-from inference import SERVER_URL
-
 cam_device = 0
 mirror = True
 
