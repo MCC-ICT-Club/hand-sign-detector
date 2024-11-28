@@ -3,11 +3,13 @@ import cv2
 import os
 import json
 import requests
+import datetime
+import numpy as np
 
 cam_device = 0
 mirror = True
 
-USE_SERVER = True
+USE_SERVER = False
 SERVER_URL = 'http://jupiter:5000'
 
 def get_classes_from_json(file_path):
@@ -46,81 +48,264 @@ else:
 print("Available classes:")
 for idx, class_name in enumerate(class_names):
     print(f"{idx}: {class_name}")
+print("\nEnter 7 for automatic capture mode.\n")
 
 # Prompt the user to select a class label
 class_idx = int(input("Enter the index of the class you want to capture images for: "))
-class_label = class_names[class_idx]
-print(f"Capturing images for class: {class_label}")
+if class_idx == 7:
+    import cv2 as cv
+    
+    # Camera Setting Variables
+    camNum = 0
+    imgWidth = 480
+    imgHeight = 640
+    minBlur = 50
+    bufferSize = 1
 
-# Create a directory for the selected class
-class_dir = os.path.join(data_dir, class_label)
-os.makedirs(class_dir, exist_ok=True)
+    # Data Capture Controls
+    quiteKey = 'q'
+    captureKey = ' '
+    singleImage = 's'
+    videoStream = 'v'
+    collectTime = 60
+    imgNum = 0
 
-# Initialize webcam
-cap = cv2.VideoCapture(cam_device)
-if not cap.isOpened():
-    retries = 0
-    while not cap.isOpened() and retries < 5:
-        print("Error: Could not open webcam. Trying again...")
-        cap = cv2.VideoCapture(cam_device)
-        retries += 1
-        time.sleep(0.2)
-    print("Error: Could not open webcam.")
+    # Gesture Tracking
+    gestures = ['G1','G2','G3','G4','G5','G6','G7','G8','G9','G10']
+    gestureCount = 0
 
-if not cap.isOpened():
-    print("Error: Could not open webcam")
-    exit()
+    # Data Organization Variables
+    imgPath = f'data/images/{gestures[gestureCount]}/'
+    saveImages = True
+    count = 0
 
-frame_count = 0
-img_count = 0
+    # Camera Property Callibration
+    captureProperties = [
+        cv.CAP_PROP_BRIGHTNESS,
+        cv.CAP_PROP_CONTRAST,
+        cv.CAP_PROP_SATURATION,
+        cv.CAP_PROP_GAIN, 
+        cv.CAP_PROP_EXPOSURE,
+        cv.CAP_PROP_TEMPERATURE,
+        cv.CAP_PROP_BACKLIGHT,
+    ]
 
-print("Press 'Spacebar' to capture an image, 'q' to quit.")
+    if saveImages:
+        os.makedirs(imgPath, exist_ok=True)
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Failed to grab frame")
-        continue
+    def printCapPropSettings():
+        for capProp in captureProperties:
+            match capProp:
+                case 10:
+                    propName = 'Brightness'
+                case 11:
+                    propName = 'Contrast'
+                case 12:
+                    propName = 'Saturation'
+                case 14:
+                    propName = 'Gain'
+                case 15:
+                    propName = 'Exposure'
+                case 23:
+                    propName = 'Temperature'
+                case 32:
+                    propName = 'Backlight'
+            actualValue = cap.get(capProp)
 
-    # Resize the frame if necessary
-    frame_resized = cv2.resize(frame, (img_width, img_height))
-    if mirror:
-        frame_resized = cv2.flip(frame_resized, 1)
+            print(f'Property {capProp}: \t {propName} set to {actualValue}')
 
-    # Display instructions on the frame
-    cv2.putText(frame_resized, f'Capturing for class: {class_label}', (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-    cv2.putText(frame_resized, "Press 'Spacebar' to capture, 'q' to quit", (10, 70),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    def maintainProperties():
+        for capProp in captureProperties:
+            match capProp:
+                case 10:
+                    cap.set(capProp, 100)
+                case 11:
+                    cap.set(capProp, 44)
+                case 12:
+                    cap.set(capProp, 15)
+                case 14:
+                    cap.set(capProp, 35)
+                case 15:
+                    cap.set(capProp, 600)
+                case 23:
+                    cap.set(capProp, 2200)
+                case 32:
+                    cap.set(capProp, 1)
 
-    # Show the frame
-    cv2.imshow('Capture Images', frame_resized)
+    def initializeCamera(camNum):
+        cap = cv.VideoCapture(camNum, cv.CAP_V4L2)
+        for capProp in captureProperties:
+            match capProp:
+                case 10:
+                    cap.set(capProp, 100)
+                case 11:
+                    cap.set(capProp, 44)
+                case 12:
+                    cap.set(capProp, 15)
+                case 14:
+                    cap.set(capProp, 35)
+                case 15:
+                    cap.set(capProp, 600)
+                case 23:
+                    cap.set(capProp, 2200)
+                case 32:
+                    cap.set(capProp, 1)
+        cap.set(cv.CAP_PROP_BUFFERSIZE, bufferSize)
+        return cap
 
-    key = cv2.waitKey(1) & 0xFF
+    cap = initializeCamera(camNum)
+    succes, img = cap.read()
 
-    if key == ord(' '):  # Spacebar to capture
-        if not USE_SERVER:
-            base_filename = f'{class_label}_{img_count:04d}'
-            img_path = get_unique_filename(class_dir, base_filename, '.jpg')
-            frame_resized2 = cv2.resize(frame, (img_width, img_height))
-            cv2.imwrite(img_path, frame_resized2)
-            print(f"Image saved: {img_path}")
-            img_count += 1
-        else:
-            # Encode the image as a PNG
-            _, img_encoded = cv2.imencode('.png', frame_resized)
-            files = {'image': ('image.png', img_encoded.tobytes(), 'image/png')}
-            data = {'class_name': class_label}
-            response = requests.post(SERVER_URL + "/upload", files=files, data=data)
-            if response.status_code == 200:
-                print("Image uploaded and saved successfully.")
+    while True:
+        succes, img = cap.read()
+        img = cv.resize(img, (imgHeight, imgWidth))
+
+        maintainProperties()
+
+        cv.putText(img, "Press 'v' to Capture Data " + str(gestures[gestureCount]), (150,440), cv.FONT_HERSHEY_PLAIN, 1,
+                        (255, 0, 255), 1)
+
+        cv.imshow("Clear Cam Settings", img)
+        key = cv.waitKey(1) & 0xFF
+
+        # Initiates Data Collection
+        if key == ord(videoStream):
+
+            # Collect Time Logic Variables
+            current = datetime.datetime.now()
+            newCycle = current + datetime.timedelta(seconds = collectTime)
+
+            # Countdown Logic Variables
+            countDown = collectTime
+            countCurrent = datetime.datetime.now()
+            addOneSecond = countCurrent + datetime.timedelta(seconds= 1)
+
+            while True:
+                succes, img = cap.read()
+                img = cv.resize(img, (imgHeight, imgWidth))
+
+                # Countdown Logic Condition
+                if datetime.datetime.now() > addOneSecond:
+                    countDown -= 1
+                    countCurrent = datetime.datetime.now()
+                    addOneSecond = countCurrent + datetime.timedelta(seconds= 1)
+
+                # Displays Capture Status
+                cv.putText(img, "Capturing Data, Hold Gesture Until Countdown Ends", (120,400), cv.FONT_HERSHEY_PLAIN, 1,
+                            (255, 0, 255), 1)
+
+                # Displays Countdown Logic
+                cv.putText(img, "Count Down: " + str(countDown), (350,440), cv.FONT_HERSHEY_PLAIN, 1,
+                            (255, 0, 255), 1)
+                
+                # Display Current Gesture
+                cv.putText(img, "Current Gesture: " + str(gestures[gestureCount]), (150,440), cv.FONT_HERSHEY_PLAIN, 1,
+                            (255, 0, 255), 1)
+                
+                cv.imshow("Clear Cam Settings", img)
+
+                # Image Capture Logic - Reduces Blury Images
+                succes, img = cap.read()
+                count += 1
+                blur = cv.Laplacian(img, cv.CV_64F).var()
+                # print(f'Blur: {blur}')
+                if count % 1 ==0 and blur < minBlur:
+                    
+                    imgNum += 1
+                    img = cv.resize(img, (imgHeight, imgWidth))
+                    cv.imwrite(imgPath + str(f'{gestures[gestureCount]}_{imgNum:04d}') + ".jpg", img)
+
+                key = cv.waitKey(1) & 0xFF
+                if key == ord(captureKey):
+                    imgNum = 0
+                    break
+
+                # Collect Time Logic Condition
+                if datetime.datetime.now() > newCycle: 
+                    imgNum = 0
+                    gestureCount += 1
+                    imgPath = f'data/images/{gestures[gestureCount]}/'
+                    if saveImages:
+                        os.makedirs(imgPath, exist_ok=True)
+                    break
+        
+        if gestureCount == 10:
+            break
+        if key == ord(quiteKey):
+            break
+else:
+    class_label = class_names[class_idx]
+    print(f"Capturing images for class: {class_label}")
+
+    # Create a directory for the selected class
+    class_dir = os.path.join(data_dir, class_label)
+    os.makedirs(class_dir, exist_ok=True)
+
+    # Initialize webcam
+    cap = cv2.VideoCapture(cam_device)
+    if not cap.isOpened():
+        retries = 0
+        while not cap.isOpened() and retries < 5:
+            print("Error: Could not open webcam. Trying again...")
+            cap = cv2.VideoCapture(cam_device)
+            retries += 1
+            time.sleep(0.2)
+        print("Error: Could not open webcam.")
+
+    if not cap.isOpened():
+        print("Error: Could not open webcam")
+        exit()
+
+    frame_count = 0
+    img_count = 0
+
+    print("Press 'Spacebar' to capture an image, 'q' to quit.")
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Failed to grab frame")
+            continue
+
+        # Resize the frame if necessary
+        frame_resized = cv2.resize(frame, (img_width, img_height))
+        if mirror:
+            frame_resized = cv2.flip(frame_resized, 1)
+
+        # Display instructions on the frame
+        cv2.putText(frame_resized, f'Capturing for class: {class_label}', (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(frame_resized, "Press 'Spacebar' to capture, 'q' to quit", (10, 70),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+        # Show the frame
+        cv2.imshow('Capture Images', frame_resized)
+
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord(' '):  # Spacebar to capture
+            if not USE_SERVER:
+                base_filename = f'{class_label}_{img_count:04d}'
+                img_path = get_unique_filename(class_dir, base_filename, '.jpg')
+                frame_resized2 = cv2.resize(frame, (img_width, img_height))
+                cv2.imwrite(img_path, frame_resized2)
+                print(f"Image saved: {img_path}")
+                img_count += 1
             else:
-                print(f"Failed to upload image. Server responded with status code {response.status_code}")
+                # Encode the image as a PNG
+                _, img_encoded = cv2.imencode('.png', frame_resized)
+                files = {'image': ('image.png', img_encoded.tobytes(), 'image/png')}
+                data = {'class_name': class_label}
+                response = requests.post(SERVER_URL + "/upload", files=files, data=data)
+                if response.status_code == 200:
+                    print("Image uploaded and saved successfully.")
+                else:
+                    print(f"Failed to upload image. Server responded with status code {response.status_code}")
 
 
-    elif key == ord('q'):  # 'q' to quit
-        print("Quitting...")
-        break
+        elif key == ord('q'):  # 'q' to quit
+            print("Quitting...")
+            break
 
 cap.release()
 cv2.destroyAllWindows()
