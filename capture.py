@@ -48,7 +48,7 @@ quiteKey = 'q'
 captureKey = ' '
 singleImage = 's'
 videoStream = 'v'
-collectTime = 10
+collectTime = 60
 imgNum = 0
 
 # Gesture Tracking
@@ -947,8 +947,6 @@ def full_auto_mode(cap):
                 # Display Current Gesture
                 cv.putText(img, "Current Gesture: " + str(gestures[gestureCount]), (150,440), cv.FONT_HERSHEY_PLAIN, 1,
                             (255, 0, 255), 1)
-                
-               
 
                 cv.imshow("Live Feed", img)
                 
@@ -973,6 +971,7 @@ def full_auto_mode(cap):
                     gestureCount += 1
                     class_dir = os.path.join(data_dir, gestures[gestureCount])
                     os.makedirs(class_dir, exist_ok=True)
+                    cv.destroyAllWindows()
                     break
 
         if gestureCount == DRONE_GESTURES:
