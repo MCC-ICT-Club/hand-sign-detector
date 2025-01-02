@@ -1,0 +1,14 @@
+Property 21: 	 Auto Exposure set to 1.0
+Property 44: 	 Auto WB set to 1.0
+Property 15: 	 Exposure set to 312.0
+Property 10: 	 Brightness set to 78.0
+Property 14: 	 Gain set to 35.0
+Property 12: 	 Saturation set to 61.0
+Property 23: 	 Temperature set to 2360.0
+Property 11: 	 Contrast set to 41.0
+Property 45: 	  set to 2360.0
+Property 32: 	 Backlight set to 1.0
+Property 5: 	 FPS set to 30.0
+Property 9: 	 MODE set to 0.0
+Property 20: 	 Sharpness set to 0.0
+Property 6: 	 FourCC set to 1448695129.0

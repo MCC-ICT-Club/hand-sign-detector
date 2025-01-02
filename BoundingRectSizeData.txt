@@ -1,0 +1,4 @@
+Height: 301
+Width: 325
+x-coordinate: 0
+y-coordinate: 179

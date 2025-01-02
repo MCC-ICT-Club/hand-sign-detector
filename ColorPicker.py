@@ -223,10 +223,6 @@ def appropriateCapPropValue(cap, prop_id):
 def getSupportedProperties():
     workingProp = []
 
-    # for capProp in captureProperties:
-    #     if cap.get(capProp) != -1.0 and cap.get(capProp) != 1:
-    #         workingProp.append(capProp)
-
     for capProp in captureProperties:
         if cap.get(capProp) != -1.0:
             workingProp.append(capProp)

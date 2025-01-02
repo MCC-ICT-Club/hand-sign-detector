@@ -1,0 +1,7 @@
+Property 10: 	 Brightness set to 77.0
+Property 11: 	 Contrast set to 25.0
+Property 12: 	 Saturation set to 37.0
+Property 14: 	 Gain set to 50.0
+Property 15: 	 Exposure set to 666.0
+Property 23: 	 Temperature set to 2320.0
+Property 32: 	 Backlight set to 1.0

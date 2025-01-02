@@ -15,7 +15,7 @@ quiteKey = 'q'
 captureKey = ' '
 singleImage = 's'
 videoStream = 'v'
-collectTime = 60
+collectTime = 10
 imgNum = 0
 
 # Gesture Tracking
@@ -171,29 +171,29 @@ def getContours(imgThres, img):
 
     return cx
 
-def findFace(img):
-    faceCascade = cv.CascadeClassifier("./hand-sign-detector/haarcascades/haarcascade_frontalface_default.xml")
-    imgGray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    faces = faceCascade.detectMultiScale(img, 1.2, 8) # tweaking the second two parameters will give you the ability
-                                                    # to improve the detection capabilities of this method
+# def findFace(img):
+#     faceCascade = cv.CascadeClassifier("./hand-sign-detector/haarcascades/haarcascade_frontalface_default.xml")
+#     imgGray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+#     faces = faceCascade.detectMultiScale(img, 1.2, 8) # tweaking the second two parameters will give you the ability
+#                                                     # to improve the detection capabilities of this method
 
-    myFaceListC = []
-    myFaceListArea = []
+#     myFaceListC = []
+#     myFaceListArea = []
 
-    for(x,y,w,h) in faces:
-        cv.rectangle(img, (x,y), (x+w, y+h), (0, 0, 255), 8)
-        cx = x + w // 2         # Center X
-        cy = y + h // 2         # Center y
-        area = w*h
-        cv.circle(img, (cx,cy), 5, (0, 255, 0), cv.FILLED)
-        myFaceListC.append([cx, cy])
-        myFaceListArea.append(area)
+#     for(x,y,w,h) in faces:
+#         cv.rectangle(img, (x,y), (x+w, y+h), (0, 0, 255), 8)
+#         cx = x + w // 2         # Center X
+#         cy = y + h // 2         # Center y
+#         area = w*h
+#         cv.circle(img, (cx,cy), 5, (0, 255, 0), cv.FILLED)
+#         myFaceListC.append([cx, cy])
+#         myFaceListArea.append(area)
 
-    if len(myFaceListArea) != 0:
-        i = myFaceListArea.index(max(myFaceListArea))
-        return img, [myFaceListC[i], myFaceListArea[i]]
-    else:
-        return img, [[0,0], 0]
+#     if len(myFaceListArea) != 0:
+#         i = myFaceListArea.index(max(myFaceListArea))
+#         return img, [myFaceListC[i], myFaceListArea[i]]
+#     else:
+#         return img, [[0,0], 0]
 
 cap = initializeCamera(camNum)
 succes, img = cap.read()
@@ -217,11 +217,11 @@ while True:
 
     # One approach is in setting it up to detect changes in lighting conditions. Then select the HSV that corresponds to the most optimal lighting 
     # conditions associated with where the program is currenlty running to reduce noise in the codes pick up of contours. 
-    #cx = getContours(imgThres, img)
-    #cx1 = getContours(imgThres1, img)
-    #cx2 = getContours(imgThres2, img)
+    # cx = getContours(imgThres, img)
+    # cx1 = getContours(imgThres1, img)
+    # cx2 = getContours(imgThres2, img)
     cx3 = getContours(imgThres3, img)
-    img, info = findFace(img)
+    # img, info = findFace(img)
 
     cv.imshow("Test", img)
     #cv.imshow("Path", imgThres)

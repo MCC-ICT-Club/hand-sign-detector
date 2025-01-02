@@ -16,7 +16,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-USE_IMAGES = True
+USE_IMAGES = False
 USE_SERVER = False
 SERVER_URL = 'http://jupiter:5000/predict'  # Adjust if your server is running elsewhere
 path = "labeled/G4"
