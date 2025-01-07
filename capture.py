@@ -956,9 +956,11 @@ def full_auto_mode(cap):
                 # Image Capture Logic - Reduces Blury Images
                 count += 1
                 blur = cv.Laplacian(img, cv.CV_64F).var()
-                if count % 1 ==0 and blur < minBlur: 
+                if count % 1 == 0 and blur < minBlur: 
+                    print("Run")
                     imgNum = save_img_locally(img, gestures[gestureCount], class_dir, imgNum)
-                            
+            
+                imgNum = save_img_locally(img, gestures[gestureCount], class_dir, imgNum)
                 # Capture Logic
                 key = cv.waitKey(1) & 0xFF
                 if key == ord(captureKey):
