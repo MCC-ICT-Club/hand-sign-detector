@@ -48,7 +48,7 @@ quiteKey = 'q'
 captureKey = ' '
 singleImage = 's'
 videoStream = 'v'
-collectTime = 10
+collectTime = 30
 imgNum = 0
 
 # Gesture Tracking
